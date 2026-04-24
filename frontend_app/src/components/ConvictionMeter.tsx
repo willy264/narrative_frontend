@@ -3,11 +3,11 @@ import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import {
-  CONVICTION_LOG_LINES,
   ConvictionHeader,
   ConvictionOverview,
   ConvictionTerminal,
 } from './conviction-meter/ConvictionMeterSections'
+import { CONVICTION_LOG_LINES } from './conviction-meter/ConvictionMeterData'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 

@@ -3,12 +3,12 @@ import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import {
-  AGENT_SHOWCASE_ITEMS,
   AgentShowcaseCounter,
   AgentShowcaseDesktop,
   AgentShowcaseMobile,
   AgentShowcaseRail,
 } from './agent-showcase/AgentShowcaseSections'
+import { AGENT_SHOWCASE_ITEMS } from './agent-showcase/AgentShowcaseData'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 

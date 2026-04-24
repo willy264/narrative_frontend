@@ -2,10 +2,8 @@ import { useRef } from 'react'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import {
-  PipelineDesktop,
-  PipelineMobile,
-} from './horizontal-pipeline/HorizontalPipelineSections'
+import { PipelineMobile } from './horizontal-pipeline/PipelineMobile'
+import { PipelineDesktop } from './horizontal-pipeline/PipelineDesktop'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
