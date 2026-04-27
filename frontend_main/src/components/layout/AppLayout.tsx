@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Folder,
@@ -12,7 +12,6 @@ import {
   LogOut,
   ExternalLink,
   User,
-  ArrowRight,
   Menu,
 } from "lucide-react";
 import { getLenisInstance } from "../../utils/scroll";
@@ -27,15 +26,6 @@ const topNavItems = [
 const sidebarItems = [
   { to: "/logs", label: "System Logs" },
   { to: "/settings", label: "Settings" },
-];
-
-/* All pages for mobile menu cards */
-const ALL_NAV_ITEMS = [
-  { to: "/", label: "Overview", num: "01" },
-  { to: "/messages", label: "Messages", num: "02" },
-  { to: "/portfolio", label: "Portfolio", num: "03" },
-  { to: "/logs", label: "System Logs", num: "04" },
-  { to: "/settings", label: "Settings", num: "05" },
 ];
 
 /* ── Top navigation link with pill hover/active state ── */
@@ -68,24 +58,13 @@ function TopNavLink({ to, label }: { to: string; label: string }) {
   );
 }
 
-/* ── Current page label resolver ── */
-function useCurrentPageLabel() {
-  const { pathname } = useLocation();
-  const found = ALL_NAV_ITEMS.find(
-    (item) => item.to === pathname || (item.to !== "/" && pathname.startsWith(item.to))
-  );
-  return found?.label || "Overview";
-}
-
 export default function AppLayout() {
   // Always true on initial load
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const currentPageLabel = useCurrentPageLabel();
 
   // Close mobile menu on navigation
   useEffect(() => {
@@ -117,6 +96,8 @@ export default function AppLayout() {
     };
   }, [mobileMenuOpen]);
 
+
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -130,10 +111,6 @@ export default function AppLayout() {
   const currentDate = new Date();
   const formattedDate = `${currentDate.toLocaleString("en-US", { month: "long" })} ${currentDate.getDate()} • ${currentDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
 
-  const handleNavigate = (path: string) => {
-    setMobileMenuOpen(false);
-    navigate(path);
-  };
 
   return (
     <div className="flex h-screen bg-bg-root font-body overflow-hidden relative">
@@ -213,46 +190,26 @@ export default function AppLayout() {
         </div>
       </aside>
 
-      {/* ════ BobbleMenu Mobile Navigation (lg:hidden) ════ */}
+      {/* ════ Floating Mobile Top Bar (BobbleMenu Style) ════ */}
       <div className="lg:hidden fixed inset-x-0 top-4 z-[50] px-4 sm:px-6">
         <div className="mx-auto max-w-[800px]">
           <motion.nav
             initial={{ y: -80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#07140f]/82 px-3 py-3 shadow-[0_18px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:px-4"
+            className="relative overflow-hidden"
           >
-            <div className="pointer-events-none absolute inset-0">
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent_28%,rgba(0,0,0,0.08))]" />
-              <div className="absolute left-[14%] top-[-30%] h-28 w-28 rounded-full bg-[radial-gradient(circle,rgba(30,215,96,0.14),transparent_72%)] blur-3xl" />
-            </div>
-
             <div className="relative z-10 flex items-center justify-between gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => handleNavigate("/")}
-                className="flex min-w-0 items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/[0.04] px-3 py-2.5 text-left transition duration-300 hover:border-white/16 hover:bg-white/[0.06] sm:px-4"
-              >
-                <img src="/logo-mark.svg" alt="Logo" className="h-9 w-9 shrink-0 sm:h-10 sm:w-10 object-contain" />
+              <div className="flex min-w-0 items-center gap-3">
+                <img src="/logo-mark.svg" alt="Logo" className="h-12 w-12 shrink-0 object-contain" />
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold tracking-[0.04em] text-white">
+                  <span className="block truncate text-xl font-semibold tracking-[0.04em] text-white">
                     Narrative
                   </span>
                   <span className="block truncate text-[0.62rem] uppercase tracking-[0.26em] text-white/38">
                     Workspace
                   </span>
                 </span>
-              </button>
-
-              <div className="hidden min-w-[164px] flex-1 justify-center md:flex">
-                <div className="rounded-[1.25rem] border border-white/10 bg-white/[0.04] px-5 py-2.5 text-center backdrop-blur-xl">
-                  <p className="text-[0.58rem] uppercase tracking-[0.26em] text-white/34">
-                    Current page
-                  </p>
-                  <p className="mt-1.5 text-sm font-semibold text-white">
-                    {currentPageLabel}
-                  </p>
-                </div>
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
@@ -262,7 +219,7 @@ export default function AppLayout() {
                   aria-label="Open navigation"
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white transition duration-300 hover:border-white/16 hover:bg-white/[0.08]"
                 >
-                  <Menu className="h-5 w-5" />
+                  <GripHorizontal size={18} />
                 </button>
               </div>
             </div>
@@ -274,6 +231,14 @@ export default function AppLayout() {
       <main className="flex-1 h-full flex flex-col relative z-20 min-w-0 pt-24 lg:pt-0">
         {/* The rounded floating panel */}
         <div className="w-full h-full bg-[#0a0a14]/60 backdrop-blur-[30px] lg:rounded-l-[40px] rounded-t-[32px] lg:rounded-tr-none shadow-2xl shadow-black/50 border border-white/[0.08] flex flex-col overflow-hidden relative z-10">
+          <div 
+            className="absolute inset-0 opacity-[0.01]" 
+            style={{ 
+              backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+              backgroundSize: '60px 60px',
+              transform: 'perspective(1000px) rotateX(60deg) translateY(-100px) translateZ(-200px)',
+            }} 
+          />
           {/* Top Navigation inside the card (Desktop only) */}
           <header className="hidden lg:flex justify-between items-center px-6 sm:px-10 py-5 border-b border-white/[0.04] bg-[#0a0a14]/40">
             <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
@@ -399,7 +364,7 @@ export default function AppLayout() {
         </div>
       </main>
 
-      {/* ════ BobbleMenu-style Mobile Menu Reveal ════ */}
+      {/* ════ Mobile Menu (Full Screen ClipPath Reveal) ════ */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
@@ -425,7 +390,7 @@ export default function AppLayout() {
                 clipPath: "circle(0% at calc(100% - 2rem) 2rem)",
               }}
               transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed inset-0 z-[59] overflow-x-hidden overflow-y-auto overscroll-y-contain bg-[#06140f]/96 lg:hidden"
+              className="fixed inset-0 z-[59] overflow-x-hidden overflow-y-auto overscroll-y-contain bg-[#06140f]/96 lg:hidden flex flex-col"
             >
               <div className="pointer-events-none absolute inset-0">
                 <div className="absolute inset-0 opacity-[0.12] bg-[radial-gradient(circle_at_2px_2px,rgba(255,255,255,0.15)_1px,transparent_0)]" style={{ backgroundSize: '24px 24px' }} />
@@ -435,11 +400,7 @@ export default function AppLayout() {
 
               <div className="relative z-10 flex min-h-screen flex-col px-4 pb-8 pt-4 sm:px-6">
                 <div className="flex items-center justify-between gap-4">
-                  <button
-                    type="button"
-                    onClick={() => handleNavigate("/")}
-                    className="flex min-w-0 items-center gap-3 rounded-[1.4rem] border border-white/10 bg-white/[0.05] px-4 py-3 text-left shadow-[0_12px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl"
-                  >
+                  <div className="flex min-w-0 items-center gap-3 rounded-[1.4rem] border border-white/10 bg-white/[0.05] px-4 py-3 text-left shadow-[0_12px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl">
                     <img src="/logo-mark.svg" alt="Logo" className="h-10 w-10 shrink-0 object-contain" />
                     <div className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-white">
@@ -449,7 +410,7 @@ export default function AppLayout() {
                         Workspace
                       </span>
                     </div>
-                  </button>
+                  </div>
 
                   <button
                     type="button"
@@ -460,80 +421,49 @@ export default function AppLayout() {
                   </button>
                 </div>
 
-                <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/[0.03] px-4 py-3 backdrop-blur-xl md:hidden">
-                  <p className="text-[0.58rem] uppercase tracking-[0.26em] text-white/34">
-                    Current page
-                  </p>
-                  <p className="mt-1.5 text-base font-semibold text-white">
-                    {currentPageLabel}
-                  </p>
-                </div>
+                <div className="mt-12 flex-1 overflow-y-auto space-y-8 px-2">
+                  <div>
+                    <p className="text-xs font-data text-text-muted mb-4 tracking-wider uppercase">Menu</p>
+                    <div className="flex flex-col gap-3">
+                      {topNavItems.map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={({ isActive }) =>
+                            `px-5 py-4 rounded-2xl text-lg font-medium transition-colors border border-white/5 ${
+                              isActive
+                                ? "bg-white/10 text-white border-white/10 shadow-lg shadow-black/20"
+                                : "bg-white/5 text-text-sub hover:text-white hover:bg-white/10"
+                            }`
+                          }
+                        >
+                          {item.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
 
-                <div className="mt-8 flex flex-1 flex-col justify-start pb-6 md:justify-center">
-                  <div className="mx-auto grid w-full max-w-[980px] grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
-                    {ALL_NAV_ITEMS.map((item, index) => (
-                      <motion.button
-                        key={`${item.label}-${item.to}`}
-                        type="button"
-                        onClick={() => handleNavigate(item.to)}
-                        initial={{ opacity: 0, y: 34, rotateX: -20 }}
-                        animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                        exit={{ opacity: 0, y: 24, rotateX: -18 }}
-                        transition={{
-                          delay: 0.12 + index * 0.07,
-                          duration: 0.55,
-                          ease: [0.22, 1, 0.36, 1],
-                        }}
-                        className="group relative block min-h-[10.5rem] w-full overflow-hidden rounded-[1.8rem] border border-white/10 bg-white/[0.045] px-4 py-4 text-left shadow-[0_14px_40px_rgba(0,0,0,0.26)] backdrop-blur-xl transition duration-300 hover:border-white/16 hover:bg-white/[0.07] sm:min-h-[11.25rem] sm:px-5 sm:py-5"
-                      >
-                        <div className="absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100">
-                          <div className="absolute inset-y-0 left-[-18%] w-[52%] bg-[linear-gradient(90deg,transparent,rgba(30,215,96,0.14),transparent)] blur-3xl" />
-                        </div>
-                        <div className="relative z-10 flex h-full items-center justify-between gap-4">
-                          <div className="min-w-0">
-                            <span className="block text-[0.62rem] uppercase tracking-[0.28em] text-white/38">
-                              Page {item.num}
-                            </span>
-                            <span className="mt-2 block text-[1.55rem] font-semibold leading-[1.02] tracking-[-0.05em] text-white sm:mt-3 sm:text-[1.85rem] lg:text-[2.15rem]">
-                              {item.label}
-                            </span>
-                          </div>
-                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/28 text-accent transition duration-300 group-hover:border-accent/26 group-hover:bg-accent/10">
-                            <ArrowRight className="h-4.5 w-4.5" />
-                          </span>
-                        </div>
-                      </motion.button>
-                    ))}
-
-                    <motion.button
-                      type="button"
-                      onClick={() => handleNavigate("/onboarding")}
-                      initial={{ opacity: 0, y: 34, rotateX: -20 }}
-                      animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                      exit={{ opacity: 0, y: 24, rotateX: -18 }}
-                      transition={{
-                        delay: 0.12 + ALL_NAV_ITEMS.length * 0.07,
-                        duration: 0.55,
-                        ease: [0.22, 1, 0.36, 1],
-                      }}
-                      className="group relative flex min-h-[10.5rem] w-full flex-col justify-between overflow-hidden rounded-[1.8rem] border border-accent/22 bg-accent px-4 py-4 text-left text-[#04120a] shadow-[0_18px_60px_rgba(30,215,96,0.2)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_70px_rgba(30,215,96,0.24)] sm:min-h-[11.25rem] sm:px-5 sm:py-5"
-                    >
-                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,255,255,0.02))]" />
-                      <div className="absolute inset-y-0 right-[-12%] w-[42%] bg-[radial-gradient(circle,rgba(255,255,255,0.26),transparent_72%)] blur-3xl" />
-                      <div className="relative z-10 flex h-full items-center justify-between gap-4">
-                        <div className="min-w-0">
-                          <span className="block text-[0.62rem] uppercase tracking-[0.28em] text-[#04120a]/66">
-                            Quick Setup
-                          </span>
-                          <span className="mt-2 block max-w-[12rem] text-[1.45rem] font-semibold leading-[1.08] tracking-[-0.05em] sm:mt-3 sm:text-[1.75rem] lg:text-[2rem]">
-                            Connect Broker
-                          </span>
-                        </div>
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-black/10 bg-[#04120a]/10 text-[#04120a] transition duration-300 group-hover:bg-[#04120a]/14">
-                          <ArrowRight className="h-4.5 w-4.5" />
-                        </span>
-                      </div>
-                    </motion.button>
+                  <div>
+                    <p className="text-xs font-data text-text-muted mb-4 tracking-wider uppercase">System</p>
+                    <div className="flex flex-col gap-3">
+                      {sidebarItems.map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={({ isActive }) =>
+                            `px-5 py-4 rounded-2xl text-lg font-medium transition-colors border border-white/5 ${
+                              isActive
+                                ? "bg-white/10 text-white border-white/10 shadow-lg shadow-black/20"
+                                : "bg-white/5 text-text-sub hover:text-white hover:bg-white/10"
+                            }`
+                          }
+                        >
+                          {item.label}
+                        </NavLink>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
