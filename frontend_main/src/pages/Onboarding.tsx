@@ -59,34 +59,35 @@ export default function Onboarding() {
   if (accountLoading) return null;
 
   return (
-    <div ref={containerRef} className="relative flex min-h-screen w-full flex-col md:flex-row overflow-hidden font-body">
-      <div className="w-full md:w-5/12 p-8 sm:p-12 border-b md:border-b-0 md:border-r border-white/5 flex flex-col relative overflow-hidden">
-        
-        <div className="mb-12">
-          <h1 className="text-4xl font-display font-bold text-white leading-tight tracking-tight mb-4">
-            Welcome to <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">Narrative</span>
-          </h1>
-          <p className="text-sm text-text-sub leading-relaxed">
-            The quantitative orchestrator for institutional strategy. Connect your broker to unleash high-throughput execution.
-          </p>
-        </div>
+    <div ref={containerRef} className="relative flex min-h-full w-full flex-col md:flex-row overflow-hidden font-body">
+      <div className="w-full md:w-5/12 p-8 border-b md:border-b-0 md:border-r border-white/5 flex flex-col md:justify-center relative overflow-hidden">
+        <div className="w-full max-w-md mx-auto flex flex-col h-full md:h-auto">
+          <div className="mb-12 md:mb-16">
+            <h1 className="text-4xl font-display font-bold text-white leading-tight tracking-tight mb-4">
+              Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">Narrative</span>
+            </h1>
+            <p className="text-sm text-text-sub leading-relaxed">
+              The quantitative orchestrator for institutional strategy. Connect your broker to unleash high-throughput execution.
+            </p>
+          </div>
 
-        <div className="mt-auto space-y-6">
-          {[
-            { icon: Terminal, title: "Latency Optimization", desc: "Sub-45ms routing" },
-            { icon: BarChart3, title: "Data Density", desc: "Institutional analytics" },
-            { icon: Lock, title: "Secure Handshake", desc: "Hardware-level protection" }
-          ].map((feature, i) => (
-            <div key={i} className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/[0.03] flex items-center justify-center shrink-0 border border-white/5">
-                <feature.icon size={16} className="text-text-muted" />
+          <div className="mt-auto md:mt-0 space-y-6">
+            {[
+              { icon: Terminal, title: "Latency Optimization", desc: "Sub-45ms routing" },
+              { icon: BarChart3, title: "Data Density", desc: "Institutional analytics" },
+              { icon: Lock, title: "Secure Handshake", desc: "Hardware-level protection" }
+            ].map((feature, i) => (
+              <div key={i} className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.03] flex items-center justify-center shrink-0 border border-white/5">
+                  <feature.icon size={16} className="text-text-muted" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white">{feature.title}</h4>
+                  <p className="text-xs text-text-muted mt-0.5">{feature.desc}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">{feature.title}</h4>
-                <p className="text-xs text-text-muted mt-0.5">{feature.desc}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 

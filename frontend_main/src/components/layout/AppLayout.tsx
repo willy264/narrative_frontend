@@ -12,7 +12,6 @@ import {
   LogOut,
   ExternalLink,
   User,
-  Menu,
 } from "lucide-react";
 import { getLenisInstance } from "../../utils/scroll";
 

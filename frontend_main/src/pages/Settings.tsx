@@ -131,7 +131,7 @@ export default function Settings() {
         <div className="settings-content flex-1 min-h-[500px]">
           {activeSection === 'broker' ? (
             /* ── Broker Integration ── */
-            <div className="card overflow-hidden p-0 h-full w-full border border-white/10 bg-white/[0.02] backdrop-blur-xl rounded-[2rem]">
+            <div className="card overflow-hidden p-0 h-full w-full border border-white/10 bg-white/[0.02] backdrop-blur-xl rounded-none!">
               <div className="p-8 border-b border-white/5 bg-white/[0.01]">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center shadow-[0_0_15px_rgba(30,215,96,0.15)]">
@@ -231,7 +231,7 @@ export default function Settings() {
             </div>
           ) : activeSection === 'api-keys' ? (
             /* ── API Keys ── */
-            <div className="card overflow-hidden p-0 h-full w-full border border-white/10 bg-white/[0.02] backdrop-blur-xl rounded-[2rem]">
+            <div className="card overflow-hidden p-0 h-full w-full border border-white/10 bg-white/[0.02] backdrop-blur-xl rounded-none!">
               <div className="p-8 border-b border-white/5 bg-white/[0.01]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                   <div className="flex items-center gap-4">
@@ -364,7 +364,7 @@ export default function Settings() {
             </div>
           ) : (
             /* ── Balance Tab ── */
-            <div className="card overflow-hidden p-0 h-full w-full border border-white/10 bg-white/[0.02] backdrop-blur-xl rounded-[2rem]">
+            <div className="card overflow-hidden p-0 h-full w-full border border-white/10 bg-white/[0.02] backdrop-blur-xl rounded-none!">
               <div className="p-8 border-b border-white/5 bg-white/[0.01]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
