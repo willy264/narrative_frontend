@@ -13,7 +13,7 @@ import HorizontalPipeline from './components/HorizontalPipeline'
 import ConvictionMeter from './components/ConvictionMeter'
 import TrustBar from './components/TrustBar'
 import Features from './components/Features'
-import CTA from './components/CTA'
+// import CTA from './components/CTA'
 import Footer from './components/Footer'
 import { setLenisInstance } from './utils/scroll'
 

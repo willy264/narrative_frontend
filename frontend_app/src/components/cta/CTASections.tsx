@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react'
-import { ArrowRight, ArrowUpRight, Check, Sparkles, type LucideIcon } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, Check, Sparkles } from 'lucide-react'
 import { CTA_STEPS, CTA_METRICS, CTA_STATUS, CTA_GUARDRAILS, CTA_FLOW_BENEFITS, CTA_NOTES } from './CTAData'
 
 export type CTANavigateHandler = (event: MouseEvent<HTMLAnchorElement>, target: string) => void
