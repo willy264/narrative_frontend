@@ -13,7 +13,7 @@ const MENU_ITEMS = [
   { num: '01', label: 'Live Markets', href: '#marquee' },
   { num: '02', label: 'Operating Layer', href: '#system' },
   { num: '03', label: 'Agents', href: '#agents' },
-  { num: '04', label: 'Beta Access', href: '#start' },
+  { num: '04', label: 'Beta Access', href: 'https://narrative-labs.vercel.app' },
 ]
 
 const SOCIAL_LINKS = [
