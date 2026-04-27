@@ -7,24 +7,28 @@ import {
   Bell,
   GripHorizontal,
   Search,
-  X,
   Plus,
   LogOut,
   ExternalLink,
   User,
+  ArrowRight,
+  PieChart,
+  MessageSquare,
+  Wallet,
+  Terminal,
 } from "lucide-react";
 import { getLenisInstance } from "../../utils/scroll";
 
 /* ── Navigation items ── */
 const topNavItems = [
-  { to: "/", label: "Overview" },
-  { to: "/messages", label: "Messages" },
-  { to: "/portfolio", label: "Portfolio" },
+  { to: "/", label: "Overview", icon: PieChart },
+  { to: "/messages", label: "Messages", icon: MessageSquare },
+  { to: "/portfolio", label: "Portfolio", icon: Wallet },
 ];
 
 const sidebarItems = [
-  { to: "/logs", label: "System Logs" },
-  { to: "/settings", label: "Settings" },
+  { to: "/logs", label: "System Logs", icon: Terminal },
+  { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 /* ── Top navigation link with pill hover/active state ── */
@@ -216,7 +220,7 @@ export default function AppLayout() {
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
                   aria-label="Open navigation"
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white transition duration-300 hover:border-white/16 hover:bg-white/[0.08]"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white transition duration-300 hover:border-white/16 hover:bg-accent/[0.2]"
                 >
                   <GripHorizontal size={18} />
                 </button>
@@ -280,10 +284,6 @@ export default function AppLayout() {
               <button className="w-9 h-9 rounded-full bg-white/[0.03] flex items-center justify-center border border-white/[0.05] text-text-sub hover:text-white hover:bg-white/[0.08] transition-all relative group">
                 <Bell size={15} />
                 <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-warn ring-2 ring-[#0a0a14]" />
-              </button>
-              
-              <button className="w-9 h-9 rounded-full bg-white/[0.03] flex items-center justify-center border border-white/[0.05] text-text-sub hover:text-white hover:bg-white/[0.08] transition-all">
-                <SettingsIcon size={15} />
               </button>
               
               <div className="relative" ref={dropdownRef}>
@@ -389,55 +389,70 @@ export default function AppLayout() {
                 clipPath: "circle(0% at calc(100% - 2rem) 2rem)",
               }}
               transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed inset-0 z-[59] overflow-x-hidden overflow-y-auto overscroll-y-contain bg-[#06140f]/96 lg:hidden flex flex-col"
+              className="fixed inset-0 z-[59] overflow-x-hidden overflow-y-auto overscroll-y-contain bg-[#0a0a14]/68 backdrop-blur-2xl lg:hidden flex flex-col"
             >
-              <div className="pointer-events-none absolute inset-0">
-                <div className="absolute inset-0 opacity-[0.12] bg-[radial-gradient(circle_at_2px_2px,rgba(255,255,255,0.15)_1px,transparent_0)]" style={{ backgroundSize: '24px 24px' }} />
-                <div className="absolute right-[-4rem] top-[-5rem] h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(30,215,96,0.2),transparent_72%)] blur-3xl" />
-                <div className="absolute bottom-[-6rem] left-[-4rem] h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.06),transparent_72%)] blur-3xl" />
-              </div>
-
+              <div 
+                className="absolute inset-0 opacity-[0.01]" 
+                style={{ 
+                  backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+                  backgroundSize: '60px 60px',
+                  transform: 'perspective(1000px) rotateX(60deg) translateY(-100px) translateZ(-200px)',
+                }} 
+              />
               <div className="relative z-10 flex min-h-screen flex-col px-4 pb-8 pt-4 sm:px-6">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="flex min-w-0 items-center gap-3 rounded-[1.4rem] border border-white/10 bg-white/[0.05] px-4 py-3 text-left shadow-[0_12px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl">
-                    <img src="/logo-mark.svg" alt="Logo" className="h-10 w-10 shrink-0 object-contain" />
-                    <div className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-white">
+
+                  {/* Logo */}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <img src="/logo-mark.svg" alt="Logo" className="h-12 w-12 shrink-0 object-contain" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-xl font-semibold tracking-[0.04em] text-white">
                         Narrative
                       </span>
-                      <span className="block truncate text-[0.62rem] uppercase tracking-[0.24em] text-white/40">
+                      <span className="block truncate text-[0.62rem] uppercase tracking-[0.26em] text-white/38">
                         Workspace
                       </span>
-                    </div>
+                    </span>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white transition duration-300 hover:bg-white/[0.08]"
+                    className="group flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white transition duration-300 hover:bg-accent/[0.08]"
                   >
-                    <X className="h-5 w-5" />
+                    <div className="relative h-4 w-4">
+                      <span className="absolute left-1/2 top-1/2 h-[1.5px] w-4 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-current transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
+                      <span className="absolute left-1/2 top-1/2 h-[1.5px] w-4 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-current transition-transform duration-300 group-hover:-rotate-90 group-hover:scale-110" />
+                    </div>
                   </button>
                 </div>
 
                 <div className="mt-12 flex-1 overflow-y-auto space-y-8 px-2">
                   <div>
                     <p className="text-xs font-data text-text-muted mb-4 tracking-wider uppercase">Menu</p>
-                    <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       {topNavItems.map((item) => (
                         <NavLink
                           key={item.to}
                           to={item.to}
                           onClick={() => setMobileMenuOpen(false)}
                           className={({ isActive }) =>
-                            `px-5 py-4 rounded-2xl text-lg font-medium transition-colors border border-white/5 ${
+                            `group relative flex flex-col justify-between rounded-[1.5rem] border p-4 sm:p-5 text-left transition duration-300 min-h-[120px] ${
                               isActive
-                                ? "bg-white/10 text-white border-white/10 shadow-lg shadow-black/20"
-                                : "bg-white/5 text-text-sub hover:text-white hover:bg-white/10"
+                                ? "border-accent/20 bg-accent/10 text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+                                : "border-white/10 bg-white/[0.04] text-text-sub hover:border-white/20 hover:bg-white/[0.08] hover:text-accent"
                             }`
                           }
                         >
-                          {item.label}
+                          <div className="flex w-full items-start justify-between">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.03] border border-white/5 text-white/70 group-hover:text-white transition-colors">
+                              <item.icon size={20} />
+                            </div>
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.02] transition-colors group-hover:bg-white/[0.08]">
+                              <ArrowRight size={14} className="opacity-50 transition-transform group-hover:-rotate-45 group-hover:opacity-100" />
+                            </div>
+                          </div>
+                          <span className="text-lg sm:text-xl font-bold tracking-wide mt-6">{item.label}</span>
                         </NavLink>
                       ))}
                     </div>
@@ -445,21 +460,29 @@ export default function AppLayout() {
 
                   <div>
                     <p className="text-xs font-data text-text-muted mb-4 tracking-wider uppercase">System</p>
-                    <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       {sidebarItems.map((item) => (
                         <NavLink
                           key={item.to}
                           to={item.to}
                           onClick={() => setMobileMenuOpen(false)}
                           className={({ isActive }) =>
-                            `px-5 py-4 rounded-2xl text-lg font-medium transition-colors border border-white/5 ${
+                            `group relative flex flex-col justify-between rounded-[1.5rem] border p-4 sm:p-5 text-left transition duration-300 min-h-[120px] ${
                               isActive
-                                ? "bg-white/10 text-white border-white/10 shadow-lg shadow-black/20"
-                                : "bg-white/5 text-text-sub hover:text-white hover:bg-white/10"
+                                ? "border-accent/20 bg-accent/10 text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+                                : "border-white/10 bg-white/[0.04] text-text-sub hover:border-white/20 hover:bg-white/[0.08] hover:text-accent"
                             }`
                           }
                         >
-                          {item.label}
+                          <div className="flex w-full items-start justify-between">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.03] border border-white/5 text-white/70 group-hover:text-white transition-colors">
+                              <item.icon size={20} />
+                            </div>
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.02] transition-colors group-hover:bg-white/[0.08]">
+                              <ArrowRight size={14} className="opacity-50 transition-transform group-hover:-rotate-45 group-hover:opacity-100" />
+                            </div>
+                          </div>
+                          <span className="text-lg sm:text-xl font-bold tracking-wide mt-6">{item.label}</span>
                         </NavLink>
                       ))}
                     </div>

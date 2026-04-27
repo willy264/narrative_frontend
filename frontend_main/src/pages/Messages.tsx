@@ -6,8 +6,9 @@ import { useNarratives, useBootstrapWorkspace } from '../hooks/useWorkspace';
 import {
   Send, CheckCircle2, Bot, Sparkles,
   AlertCircle, Lightbulb, Zap, Target, TrendingUp,
-  Paperclip, Smile, MoreVertical, Search, ChevronLeft,
-  Rocket, Loader2
+  Paperclip, Smile, MoreVertical, Search,
+  Rocket, Loader2, Menu, X,
+  GripHorizontal
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -39,6 +40,7 @@ export default function Messages() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isBootstrapping, setIsBootstrapping] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -129,11 +131,15 @@ export default function Messages() {
 
   const handleSelectThread = (id: string) => {
     setThreadId(id);
+    setShowMobileSidebar(false);
   };
 
   const handleNewThread = () => {
     createThread.mutate(undefined, {
-      onSuccess: (data) => setThreadId(data.thread_id),
+      onSuccess: (data) => {
+        setThreadId(data.thread_id);
+        setShowMobileSidebar(false);
+      },
       onError: () => toast.error('Failed to create new session'),
     });
   };
@@ -145,14 +151,37 @@ export default function Messages() {
   const hasMessages = thread?.messages && thread.messages.filter(m => m.role !== 'system').length > 0;
 
   return (
-    <div className="flex h-full w-full bg-[#07070f]">
+    <div className="flex h-full w-full bg-[#07070f] relative overflow-hidden">
+      {/* Mobile Overlay */}
+      {showMobileSidebar && (
+        <div 
+          className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" 
+          onClick={() => setShowMobileSidebar(false)} 
+        />
+      )}
+
       {/* Sidebar - Chat List (real threads) */}
-      <div className="w-[320px] hidden md:flex flex-col border-r border-white/[0.04] bg-[#0a0a14]/60">
+      <div className={`
+        absolute md:relative z-50 md:z-auto
+        top-0 left-0 bottom-0
+        w-[85%] sm:w-[320px] md:w-[320px]
+        transform transition-transform duration-300 ease-in-out
+        ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        flex flex-col border-r border-white/[0.04] bg-[#0a0a14] md:bg-[#0a0a14]/60 shrink-0
+      `}>
         <div className="p-4 border-b border-white/[0.04] flex items-center justify-between">
           <h2 className="font-display text-lg font-bold text-white">Messages</h2>
-          <button onClick={handleNewThread} className="text-text-muted hover:text-accent transition-colors" title="New thread">
-            <MoreVertical size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={handleNewThread} className="text-text-muted hover:text-accent transition-colors p-2" title="New thread">
+              <MoreVertical size={18} />
+            </button>
+            <button onClick={() => setShowMobileSidebar(false)} className="md:hidden text-text-muted hover:text-white transition-colors p-2 group flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.02] border border-white/[0.05] duration-300 " title="Close sidebar">
+              <div className="relative h-4 w-4">
+                <span className="absolute left-1/2 top-1/2 h-[1.5px] w-4 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-current transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
+                <span className="absolute left-1/2 top-1/2 h-[1.5px] w-4 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-current transition-transform duration-300 group-hover:-rotate-90 group-hover:scale-110" />
+              </div>
+            </button>
+          </div>
         </div>
         <div className="p-3">
           <div className="relative">
@@ -227,8 +256,8 @@ export default function Messages() {
         {/* Chat Header */}
         <div className="h-[72px] shrink-0 border-b border-white/[0.04] bg-[#0a0a14]/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-3 sm:gap-4">
-            <button className="md:hidden w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/[0.05] text-text-muted hover:text-white transition-colors -ml-2 shrink-0">
-              <ChevronLeft size={20} />
+            <button onClick={() => setShowMobileSidebar(true)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-text-muted hover:text-white transition-colors -ml-2 shrink-0">
+              <GripHorizontal size={18} />
             </button>
             <div className="relative shrink-0">
               <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
