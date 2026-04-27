@@ -84,7 +84,7 @@ const Hero = () => {
 
   const handleHeroScroll = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault()
-    scrollToTarget('#marquee', { offset: -16 })
+    scrollToTarget('#footer', { offset: -16 })
   }
 
   return (
