@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useCreateCompilerThread, useSendMessage, useApproveThread, useCompilerThread } from '../hooks/useCompiler';
+import { useCompilerThreads, useCreateCompilerThread, useSendMessage, useApproveThread, useCompilerThread } from '../hooks/useCompiler';
 import {
   Send, CheckCircle2, Bot, Sparkles,
   AlertCircle, Lightbulb, Zap, Target, TrendingUp,
   Paperclip, Smile, MoreVertical, Search, ChevronLeft
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { formatDistanceToNow } from 'date-fns';
 
 const SUGGESTED_PROMPTS = [
   {
@@ -35,6 +36,8 @@ export default function Messages() {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // ── Real data: fetch all compiler threads for the sidebar ──
+  const { data: allThreads } = useCompilerThreads();
   const { data: thread, isLoading: threadLoading } = useCompilerThread(threadId || undefined);
   const createThread = useCreateCompilerThread();
   const sendMessage = useSendMessage();
@@ -77,6 +80,17 @@ export default function Messages() {
     });
   };
 
+  const handleSelectThread = (id: string) => {
+    setThreadId(id);
+  };
+
+  const handleNewThread = () => {
+    createThread.mutate(undefined, {
+      onSuccess: (data) => setThreadId(data.thread_id),
+      onError: () => toast.error('Failed to create new session'),
+    });
+  };
+
   const isAwaitingApproval = thread?.status === 'AWAITING_APPROVAL';
   const isCompiled = thread?.status === 'COMPILED';
   const isRuntimeDisabled = thread?.runtime_mode === 'disabled';
@@ -85,11 +99,11 @@ export default function Messages() {
 
   return (
     <div className="flex h-full w-full bg-[#07070f]">
-      {/* Sidebar - Chat List */}
+      {/* Sidebar - Chat List (real threads) */}
       <div className="w-[320px] hidden md:flex flex-col border-r border-white/[0.04] bg-[#0a0a14]/60">
         <div className="p-4 border-b border-white/[0.04] flex items-center justify-between">
           <h2 className="font-display text-lg font-bold text-white">Messages</h2>
-          <button className="text-text-muted hover:text-white transition-colors">
+          <button onClick={handleNewThread} className="text-text-muted hover:text-accent transition-colors" title="New thread">
             <MoreVertical size={18} />
           </button>
         </div>
@@ -104,24 +118,60 @@ export default function Messages() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1 no-scrollbar">
-          {/* Active Session Item */}
-          <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.05] cursor-pointer flex items-start gap-3">
-            <div className="relative shrink-0">
-              <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
-                <Bot size={20} className="text-accent" />
+          {(allThreads ?? []).map((t) => {
+            const isActive = t.thread_id === threadId;
+            const lastMsg = t.messages?.filter(m => m.role !== 'system').slice(-1)[0];
+            return (
+              <div
+                key={t.thread_id}
+                onClick={() => handleSelectThread(t.thread_id)}
+                className={`p-3 rounded-xl cursor-pointer flex items-start gap-3 transition-colors ${
+                  isActive ? 'bg-white/[0.04] border border-white/[0.05]' : 'hover:bg-white/[0.02] border border-transparent'
+                }`}
+              >
+                <div className="relative shrink-0">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    isActive ? 'bg-accent/10 border border-accent/20' : 'bg-white/5 border border-white/10'
+                  }`}>
+                    <Bot size={20} className={isActive ? 'text-accent' : 'text-text-muted'} />
+                  </div>
+                  {t.status !== 'COMPILED' && t.status !== 'ARCHIVED' && (
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-accent rounded-full border-2 border-[#0a0a14]"></div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-sm text-white truncate">
+                      {t.status === 'COMPILED' ? 'Compiled' : t.status === 'AWAITING_APPROVAL' ? 'Pending' : 'Active'}
+                    </span>
+                    <span className="text-[10px] text-text-muted whitespace-nowrap">
+                      {formatDistanceToNow(new Date(t.updated_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-muted truncate">
+                    {lastMsg?.content ?? 'Empty thread'}
+                  </p>
+                </div>
               </div>
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-accent rounded-full border-2 border-[#0a0a14]"></div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-sm text-white truncate">Narrative Compiler</span>
-                <span className="text-[10px] text-text-muted whitespace-nowrap">Just now</span>
+            );
+          })}
+          {(!allThreads || allThreads.length === 0) && (
+            <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.05] flex items-start gap-3">
+              <div className="relative shrink-0">
+                <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
+                  <Bot size={20} className="text-accent" />
+                </div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-accent rounded-full border-2 border-[#0a0a14]"></div>
               </div>
-              <p className="text-xs text-text-muted truncate">
-                {hasMessages ? thread?.messages[thread.messages.length - 1].content : 'Ready to compile strategy...'}
-              </p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-semibold text-sm text-white truncate">Narrative Compiler</span>
+                  <span className="text-[10px] text-text-muted whitespace-nowrap">Just now</span>
+                </div>
+                <p className="text-xs text-text-muted truncate">Ready to compile strategy...</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

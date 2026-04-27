@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useWorkspace, useWorkspaceFile } from '../hooks/useWorkspace';
+import { useWorkspaces, useWorkspace, useWorkspaceFile, useDeposit, useWithdraw } from '../hooks/useWorkspace';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight,
@@ -8,16 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-const MOCK_WORKSPACE_ID = 'workspace_local_123';
 const COLORS = ['#00E676', '#4A7CFF', '#8B5CF6', '#FACC15', '#FF3B30', '#00BCD4', '#FF9800'];
-
-/* ── Mock transaction history for richer display ── */
-const MOCK_TRANSACTIONS = [
-  { id: 'tx_001', type: 'deposit' as const, amount: 10000, note: 'Initial capital', time: '2h ago' },
-  { id: 'tx_002', type: 'deposit' as const, amount: 5000, note: 'Top-up', time: '1d ago' },
-  { id: 'tx_003', type: 'withdraw' as const, amount: 2000, note: 'Profit take', time: '3d ago' },
-  { id: 'tx_004', type: 'deposit' as const, amount: 15000, note: 'Seed fund', time: '7d ago' },
-];
 
 export default function Portfolio() {
   const [activeTab, setActiveTab] = useState<'positions' | 'allocation' | 'history'>('positions');
@@ -25,9 +16,18 @@ export default function Portfolio() {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [amount, setAmount] = useState('');
 
-  const { data: workspace } = useWorkspace(MOCK_WORKSPACE_ID);
-  const { data: portfolioFile, isLoading } = useWorkspaceFile(MOCK_WORKSPACE_ID, 'portfolio');
-  const { data: execPlanFile } = useWorkspaceFile(MOCK_WORKSPACE_ID, 'execution_plan');
+  // ── Real data: fetch workspaces list and use the first ──
+  const { data: workspaces } = useWorkspaces();
+  const primaryWorkspace = workspaces?.[0];
+  const workspaceId = primaryWorkspace?.workspace_id;
+
+  const { data: workspace } = useWorkspace(workspaceId);
+  const { data: portfolioFile, isLoading } = useWorkspaceFile(workspaceId, 'portfolio');
+  const { data: execPlanFile } = useWorkspaceFile(workspaceId, 'execution_plan');
+  const { data: logsFile } = useWorkspaceFile(workspaceId, 'logs');
+
+  const deposit = useDeposit();
+  const withdraw = useWithdraw();
 
   const portfolioData = (portfolioFile as any)?.parsedContent || {
     total_value: 0,
@@ -37,6 +37,19 @@ export default function Portfolio() {
   };
 
   const executionPlan = (execPlanFile as any)?.parsedContent || null;
+
+  // Build transaction history from real logs
+  const allLogs = Array.isArray((logsFile as any)?.parsedContent) ? (logsFile as any).parsedContent : [];
+  const transactionLogs = allLogs
+    .filter((log: any) => log.event === 'PORTFOLIO_DEPOSIT' || log.event === 'PORTFOLIO_WITHDRAW')
+    .slice(0, 20)
+    .map((log: any, i: number) => ({
+      id: `tx_${i}`,
+      type: log.event === 'PORTFOLIO_DEPOSIT' ? 'deposit' as const : 'withdraw' as const,
+      amount: log.metadata?.amount ?? 0,
+      note: log.message || log.event,
+      time: log.timestamp ? new Date(log.timestamp).toLocaleString() : '—',
+    }));
 
   const chartData = [
     { name: 'Cash', value: portfolioData.cash_balance || 0 },
@@ -56,38 +69,36 @@ export default function Portfolio() {
   const handleDeposit = async () => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) return toast.error('Enter a valid amount');
-    try {
-      const res = await fetch(`/api/workspaces/${MOCK_WORKSPACE_ID}/deposit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: numAmount }),
-      });
-      if (!res.ok) throw new Error('Deposit failed');
-      toast.success(`Deposited ${symbol}${numAmount.toLocaleString()}`);
-      setAmount('');
-      setShowDeposit(false);
-    } catch {
-      toast.error('Failed to process deposit');
-    }
+    if (!workspaceId) return toast.error('No workspace found');
+    deposit.mutate({ workspaceId, amount: numAmount }, {
+      onSuccess: () => {
+        toast.success(`Deposited ${symbol}${numAmount.toLocaleString()}`);
+        setAmount('');
+        setShowDeposit(false);
+      },
+      onError: (err: any) => {
+        const msg = err.response?.data?.error?.message || 'Failed to process deposit';
+        toast.error(msg);
+      },
+    });
   };
 
   const handleWithdraw = async () => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) return toast.error('Enter a valid amount');
     if (numAmount > displayUnallocated) return toast.error('Amount exceeds unallocated balance');
-    try {
-      const res = await fetch(`/api/workspaces/${MOCK_WORKSPACE_ID}/withdraw`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: numAmount }),
-      });
-      if (!res.ok) throw new Error('Withdraw failed');
-      toast.success(`Withdrew ${symbol}${numAmount.toLocaleString()}`);
-      setAmount('');
-      setShowWithdraw(false);
-    } catch {
-      toast.error('Failed to process withdrawal');
-    }
+    if (!workspaceId) return toast.error('No workspace found');
+    withdraw.mutate({ workspaceId, amount: numAmount }, {
+      onSuccess: () => {
+        toast.success(`Withdrew ${symbol}${numAmount.toLocaleString()}`);
+        setAmount('');
+        setShowWithdraw(false);
+      },
+      onError: (err: any) => {
+        const msg = err.response?.data?.error?.message || 'Failed to process withdrawal';
+        toast.error(msg);
+      },
+    });
   };
 
   return (
@@ -101,13 +112,15 @@ export default function Portfolio() {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => { setShowDeposit(!showDeposit); setShowWithdraw(false); setAmount(''); }}
-            className="px-4 py-2.5 rounded-xl bg-accent/10 border border-accent/20 text-accent text-xs font-semibold flex items-center gap-2 hover:bg-accent/20 transition-colors"
+            disabled={!workspaceId}
+            className="px-4 py-2.5 rounded-xl bg-accent/10 border border-accent/20 text-accent text-xs font-semibold flex items-center gap-2 hover:bg-accent/20 transition-colors disabled:opacity-30"
           >
             <ArrowDown size={14} /> Deposit
           </button>
           <button
             onClick={() => { setShowWithdraw(!showWithdraw); setShowDeposit(false); setAmount(''); }}
-            className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-semibold flex items-center gap-2 hover:bg-white/10 transition-colors"
+            disabled={!workspaceId}
+            className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-semibold flex items-center gap-2 hover:bg-white/10 transition-colors disabled:opacity-30"
           >
             <ArrowUp size={14} /> Withdraw
           </button>
@@ -137,11 +150,12 @@ export default function Portfolio() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={showDeposit ? handleDeposit : handleWithdraw}
+              disabled={deposit.isPending || withdraw.isPending}
               className={`px-5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
                 showDeposit ? 'bg-accent text-black hover:bg-accent-dim' : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
+              } disabled:opacity-50`}
             >
-              Confirm {showDeposit ? 'Deposit' : 'Withdrawal'}
+              {(deposit.isPending || withdraw.isPending) ? 'Processing...' : `Confirm ${showDeposit ? 'Deposit' : 'Withdrawal'}`}
             </button>
             <button
               onClick={() => { setShowDeposit(false); setShowWithdraw(false); setAmount(''); }}
@@ -330,34 +344,42 @@ export default function Portfolio() {
           </div>
         </div>
       ) : (
-        /* ── Transaction History Tab ── */
+        /* ── Transaction History Tab (real logs) ── */
         <div className="card overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <p className="section-label">Transaction History</p>
-            <span className="text-xs text-text-muted font-data">{MOCK_TRANSACTIONS.length} transactions</span>
+            <span className="text-xs text-text-muted font-data">{transactionLogs.length} transactions</span>
           </div>
           <div className="space-y-2">
-            {MOCK_TRANSACTIONS.map((tx) => (
-              <div key={tx.id} className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                  tx.type === 'deposit' ? 'bg-accent/10 border border-accent/20' : 'bg-white/5 border border-white/10'
-                }`}>
-                  {tx.type === 'deposit' ? <ArrowDown size={16} className="text-accent" /> : <ArrowUp size={16} className="text-white" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white font-medium">{tx.type === 'deposit' ? 'Deposit' : 'Withdrawal'}</p>
-                  <p className="text-xs text-text-muted">{tx.note}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className={`text-sm font-display font-bold ${tx.type === 'deposit' ? 'text-accent' : 'text-white'}`}>
-                    {tx.type === 'deposit' ? '+' : '-'}{symbol}{tx.amount.toLocaleString()}
-                  </p>
-                  <p className="text-[10px] text-text-muted font-data flex items-center gap-1 justify-end">
-                    <Clock size={9} /> {tx.time}
-                  </p>
-                </div>
+            {transactionLogs.length === 0 ? (
+              <div className="text-center py-10">
+                <Clock size={28} className="mx-auto mb-3 text-text-muted" />
+                <p className="text-sm text-text-sub">No deposit or withdrawal transactions yet</p>
+                <p className="text-xs text-text-muted mt-1">Use the deposit or withdraw buttons to manage capital.</p>
               </div>
-            ))}
+            ) : (
+              transactionLogs.map((tx: any) => (
+                <div key={tx.id} className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    tx.type === 'deposit' ? 'bg-accent/10 border border-accent/20' : 'bg-white/5 border border-white/10'
+                  }`}>
+                    {tx.type === 'deposit' ? <ArrowDown size={16} className="text-accent" /> : <ArrowUp size={16} className="text-white" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium">{tx.type === 'deposit' ? 'Deposit' : 'Withdrawal'}</p>
+                    <p className="text-xs text-text-muted truncate">{tx.note}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`text-sm font-display font-bold ${tx.type === 'deposit' ? 'text-accent' : 'text-white'}`}>
+                      {tx.type === 'deposit' ? '+' : '-'}{symbol}{tx.amount.toLocaleString()}
+                    </p>
+                    <p className="text-[10px] text-text-muted font-data flex items-center gap-1 justify-end">
+                      <Clock size={9} /> {tx.time}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

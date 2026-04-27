@@ -3,15 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus, ArrowRight, Activity, Zap, BarChart3, Users,
   Wallet, ArrowUpRight, Play, Pause, RefreshCcw, Eye,
-  TrendingUp, Cpu, ChevronRight, Layers, Target
+  TrendingUp, Cpu, ChevronRight, Layers, Target, AlertTriangle, Shield
 } from 'lucide-react';
-import { useOrchestratorStatus, useRunOrchestrator, usePauseOrchestrator, useResumeOrchestrator } from '../hooks/useOrchestrator';
-import { useWorkspace, useWorkspaceFile } from '../hooks/useWorkspace';
+import { useOrchestratorThreads, useOrchestratorStatus, useRunOrchestrator, usePauseOrchestrator, useResumeOrchestrator, useRunHistory } from '../hooks/useOrchestrator';
+import { useWorkspaceFile } from '../hooks/useWorkspace';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
-
-const MOCK_THREAD_ID = 'thread_local_123';
-const MOCK_WORKSPACE_ID = 'workspace_local_123';
 
 const MARKET_ICONS = [TrendingUp, Activity, Target, Layers];
 
@@ -50,26 +47,26 @@ const MOCK_MARKETS = [
   },
 ];
 
-const MOCK_SESSIONS = [
-  { id: '#38757', space: 'BTC Momentum', status: 'Live' as const, progress: 40, reward: '0.27 USD', trigger: 'scheduler', time: '2 min ago' },
-  { id: '#38756', space: 'ETH Yield Farm', status: 'Completed' as const, progress: 100, reward: '1.24 USD', trigger: 'manual', time: '1h ago' },
-  { id: '#38755', space: 'BTC Momentum', status: 'Completed' as const, progress: 100, reward: '0.89 USD', trigger: 'scheduler', time: '5h ago' },
-  { id: '#38754', space: 'Forex Macro', status: 'Failed' as const, progress: 65, reward: '0.00 USD', trigger: 'scheduler', time: '9h ago' },
-  { id: '#38753', space: 'BTC Momentum', status: 'Completed' as const, progress: 100, reward: '2.10 USD', trigger: 'manual', time: '13h ago' },
-];
-
 const statusColors = {
-  Live: { dot: 'bg-accent animate-pulse', text: 'text-accent' },
-  Completed: { dot: 'bg-purple-400', text: 'text-purple-400' },
-  Failed: { dot: 'bg-danger', text: 'text-danger' },
+  started:   { dot: 'bg-accent animate-pulse', text: 'text-accent', label: 'Live' },
+  succeeded: { dot: 'bg-purple-400', text: 'text-purple-400', label: 'Completed' },
+  failed:    { dot: 'bg-danger', text: 'text-danger', label: 'Failed' },
+  skipped:   { dot: 'bg-text-muted', text: 'text-text-muted', label: 'Skipped' },
 };
 
 export default function Dashboard() {
   const [sessionFilter, setSessionFilter] = useState<'All' | 'Live' | 'Completed' | 'Failed'>('All');
   const navigate = useNavigate();
-  const { data: status } = useOrchestratorStatus(MOCK_THREAD_ID, true);
-  const { data: workspace } = useWorkspace(status?.workspace?.workspace_id || MOCK_WORKSPACE_ID);
-  const { data: portfolioFile } = useWorkspaceFile(workspace?.workspace_id, 'portfolio');
+
+  // ── Real data: fetch all orchestrator threads, use the first active one ──
+  const { data: orchThreads } = useOrchestratorThreads();
+  const primaryThread = orchThreads?.[0];
+  const primaryThreadId = primaryThread?.schedule?.thread_id;
+  const primaryWorkspaceId = primaryThread?.workspace?.workspace_id;
+
+  const { data: status } = useOrchestratorStatus(primaryThreadId, true);
+  const { data: portfolioFile } = useWorkspaceFile(primaryWorkspaceId, 'portfolio');
+  const { data: runHistory } = useRunHistory(primaryThreadId, undefined, 10);
 
   const runOrchestrator = useRunOrchestrator();
   const pauseOrchestrator = usePauseOrchestrator();
@@ -78,10 +75,17 @@ export default function Dashboard() {
   const isRunning = status?.latest_run?.status === 'started';
   const isPaused = status?.schedule?.status === 'paused';
   const isTerminal = status?.schedule?.status === 'terminal';
+  const tradingMode: string = status?.trading_policy?.mode ?? 'paper';
+  const isLive = tradingMode === 'live';
   const portfolioData = (portfolioFile as any)?.parsedContent || { total_value: 0, positions: [] };
 
+  // Show Bayse setup banner if latest run failed with Bayse error
+  const bayseSetupNeeded = status?.latest_run?.status === 'failed' &&
+    (status?.latest_run?.summary?.toLowerCase().includes('bayse') || status?.schedule?.last_error?.toLowerCase().includes('bayse'));
+
   const handleManualRun = () => {
-    runOrchestrator.mutate(MOCK_THREAD_ID, {
+    if (!primaryThreadId) return toast.error('No active orchestrator thread found.');
+    runOrchestrator.mutate(primaryThreadId, {
       onSuccess: () => toast.success('Orchestrator run triggered successfully.'),
       onError: (err: any) => {
         if (err?.response?.status === 409) {
@@ -94,19 +98,51 @@ export default function Dashboard() {
   };
 
   const handleTogglePause = () => {
+    if (!primaryThreadId) return;
     if (status?.schedule?.status === 'active') {
-      pauseOrchestrator.mutate(MOCK_THREAD_ID);
+      pauseOrchestrator.mutate(primaryThreadId);
     } else {
-      resumeOrchestrator.mutate(MOCK_THREAD_ID);
+      resumeOrchestrator.mutate(primaryThreadId);
     }
   };
 
+  // Build session list from real run history
+  const sessions = (runHistory ?? []).map(run => ({
+    id: `#${run.run_id.slice(-5)}`,
+    space: primaryThread?.workspace?.narrative_id ?? '—',
+    rawStatus: run.status,
+    progress: run.status === 'succeeded' ? 100 : run.status === 'started' ? 40 : run.status === 'failed' ? 65 : 100,
+    trigger: run.trigger,
+    time: formatDistanceToNow(new Date(run.started_at), { addSuffix: true }),
+    summary: run.summary,
+  }));
+
   const filteredSessions = sessionFilter === 'All'
-    ? MOCK_SESSIONS
-    : MOCK_SESSIONS.filter(s => s.status === sessionFilter);
+    ? sessions
+    : sessions.filter(s => {
+        if (sessionFilter === 'Live') return s.rawStatus === 'started';
+        if (sessionFilter === 'Completed') return s.rawStatus === 'succeeded';
+        if (sessionFilter === 'Failed') return s.rawStatus === 'failed';
+        return true;
+      });
 
   return (
     <div className="space-y-8 pb-10">
+
+      {/* ── Bayse Setup Banner ── */}
+      {bayseSetupNeeded && (
+        <div className="flex items-start gap-3 p-4 rounded-2xl bg-warn/[0.06] border border-warn/20">
+          <AlertTriangle size={16} className="text-warn shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white">Bayse account setup required</p>
+            <p className="text-xs text-text-sub mt-0.5">The orchestrator couldn't place trades because your Bayse API key is missing or invalid.</p>
+          </div>
+          <button onClick={() => navigate('/settings')} className="text-xs font-semibold text-warn hover:underline shrink-0">
+            Fix Setup →
+          </button>
+        </div>
+      )}
+
       {/* ── Hero Header ── */}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -116,7 +152,7 @@ export default function Dashboard() {
           </p>
         </div>
         <button
-          onClick={() => navigate('/compiler')}
+          onClick={() => navigate('/messages')}
           className="btn-create inline-flex items-center gap-2.5 shrink-0 self-start"
         >
           <Plus size={16} />
@@ -129,7 +165,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { icon: Wallet, label: 'Total Value', value: `$${(portfolioData.total_value || 124500).toLocaleString()}`, sub: <span className="text-accent"><ArrowUpRight size={10} className="inline" /> +2.4% in 24h</span> },
-          { icon: BarChart3, label: 'Total Runs', value: '3.79M', sub: <span className="text-accent">503 in last 24h</span> },
+          { icon: BarChart3, label: 'Total Runs', value: sessions.length > 0 ? String(sessions.length) : '—', sub: <span className="text-accent">{sessions.filter(s => s.rawStatus === 'started').length} live</span> },
           { icon: Zap, label: 'Trending', value: 'BTC Momentum', sub: <span className="text-text-muted">230 sessions in 24h</span>, small: true },
           { icon: Users, label: 'Active Agents', value: '153.2K', sub: <span className="text-text-muted">176 active in last 24h</span> },
         ].map((stat) => (
@@ -163,7 +199,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm font-semibold text-white">Orchestrator</p>
               <span className={`text-[10px] font-data font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md ${
                 isRunning ? 'bg-accent/10 text-accent' :
@@ -173,16 +209,27 @@ export default function Dashboard() {
               }`}>
                 {isRunning ? 'RUNNING' : isPaused ? 'PAUSED' : isTerminal ? 'TERMINAL' : 'IDLE'}
               </span>
+              {/* Trading mode badge */}
+              {status && (
+                <span className={`text-[10px] font-data font-bold uppercase tracking-wider px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                  isLive ? 'bg-danger/10 text-danger border border-danger/20' : 'bg-white/5 text-text-muted'
+                }`}>
+                  <Shield size={9} />
+                  {isLive ? 'LIVE TRADING' : 'PAPER'}
+                </span>
+              )}
             </div>
             <p className="text-xs text-text-muted mt-0.5">
-              {status?.schedule?.next_run_at
-                ? `Next cycle ${formatDistanceToNow(new Date(status.schedule.next_run_at), { addSuffix: true })}`
-                : 'Every 4 hours • Paper trading mode'}
+              {isTerminal
+                ? 'Schedule terminated — narrative reached end state'
+                : status?.schedule?.next_run_at
+                  ? `Next cycle ${formatDistanceToNow(new Date(status.schedule.next_run_at), { addSuffix: true })}`
+                  : primaryThreadId ? 'Every 4 hours' : 'No active threads — create a narrative to start'}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isTerminal && (
+          {!isTerminal && primaryThreadId && (
             <button
               onClick={handleTogglePause}
               className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
@@ -197,7 +244,7 @@ export default function Dashboard() {
           )}
           <button
             onClick={handleManualRun}
-            disabled={isRunning || isTerminal}
+            disabled={isRunning || isTerminal || !primaryThreadId}
             className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
           >
             <RefreshCcw size={13} className={isRunning ? 'animate-spin' : ''} />
@@ -233,7 +280,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => navigate('/compiler')} className="btn-join shrink-0">
+                  <button onClick={() => navigate('/messages')} className="btn-join shrink-0">
                     Join Space <ArrowRight size={14} />
                   </button>
                 </div>
@@ -265,7 +312,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Recent Sessions ── */}
+      {/* ── Recent Sessions (real run history) ── */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
           <h3 className="font-display text-lg sm:text-xl font-bold text-white">Recent Sessions</h3>
@@ -294,10 +341,14 @@ export default function Dashboard() {
 
         <div className="space-y-2">
           {filteredSessions.length === 0 ? (
-            <div className="text-center py-10 text-sm text-text-muted">No sessions match this filter.</div>
+            <div className="text-center py-10 text-sm text-text-muted">
+              {sessions.length === 0
+                ? 'No orchestrator runs yet. Create a narrative and run the orchestrator to get started.'
+                : 'No sessions match this filter.'}
+            </div>
           ) : (
             filteredSessions.map((session) => {
-              const colors = statusColors[session.status];
+              const colors = statusColors[session.rawStatus as keyof typeof statusColors] ?? statusColors.skipped;
               return (
                 <div key={session.id} className="session-row group">
                   <span className="text-text-muted font-data text-xs w-16 shrink-0 hidden sm:block">{session.id}</span>
@@ -312,27 +363,22 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
-                    <span className={`text-xs font-medium ${colors.text}`}>{session.status}</span>
+                    <span className={`text-xs font-medium ${colors.text}`}>{colors.label}</span>
                   </div>
                   <div className="hidden md:flex items-center gap-2 w-28 shrink-0">
                     <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${
-                          session.status === 'Failed' ? 'bg-danger' : 'bg-accent'
+                          session.rawStatus === 'failed' ? 'bg-danger' : 'bg-accent'
                         }`}
                         style={{ width: `${session.progress}%` }}
                       />
                     </div>
                     <span className="text-[11px] text-text-muted font-data w-8 text-right">{session.progress}%</span>
                   </div>
-                  <span className={`hidden sm:inline-flex px-3 py-1 rounded-lg text-[11px] font-semibold font-data shrink-0 ${
-                    parseFloat(session.reward) > 0 ? 'bg-accent/10 text-accent' : 'bg-white/5 text-text-muted'
-                  }`}>
-                    {session.reward}
-                  </span>
-                  <button className="btn-session shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                  <button className="btn-session shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" onClick={() => navigate('/logs')}>
                     <Eye size={13} />
-                    <span className="hidden sm:inline">{session.status === 'Live' ? 'Watch' : 'Results'}</span>
+                    <span className="hidden sm:inline">{session.rawStatus === 'started' ? 'Watch' : 'Results'}</span>
                     <ChevronRight size={12} />
                   </button>
                 </div>

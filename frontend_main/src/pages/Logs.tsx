@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { useWorkspaceFile } from '../hooks/useWorkspace';
+import { useWorkspaces, useWorkspaceFile } from '../hooks/useWorkspace';
 import {
   Terminal, Search, AlertTriangle,
   AlertCircle, Info, Activity
 } from 'lucide-react';
 import { format } from 'date-fns';
 import CustomSelect from '../components/ui/CustomSelect';
-
-const MOCK_WORKSPACE_ID = 'workspace_local_123';
 
 const ACTOR_STYLES: Record<string, { color: string; bg: string; icon: typeof Activity }> = {
   researcher:   { color: 'text-blue',         bg: 'bg-blue/10',         icon: Search },
@@ -27,7 +25,11 @@ export default function Logs() {
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: logsFile, isLoading } = useWorkspaceFile(MOCK_WORKSPACE_ID, 'logs');
+  // ── Real data: fetch workspaces list and use the first ──
+  const { data: workspaces } = useWorkspaces();
+  const workspaceId = workspaces?.[0]?.workspace_id;
+
+  const { data: logsFile, isLoading } = useWorkspaceFile(workspaceId, 'logs');
 
   const allLogs = Array.isArray((logsFile as any)?.parsedContent) ? (logsFile as any).parsedContent : [];
 
