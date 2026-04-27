@@ -7,8 +7,7 @@ import {
   Send, CheckCircle2, Bot, Sparkles,
   AlertCircle, Lightbulb, Zap, Target, TrendingUp,
   Paperclip, Smile, MoreVertical, Search,
-  Rocket, Loader2, Menu, X,
-  GripHorizontal
+  Rocket, Loader2, GripHorizontal
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -274,10 +273,12 @@ export default function Messages() {
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-accent mt-0.5 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                {thread?.status === 'COMPILED' ? 'Strategy Compiled' : thread?.status === 'AWAITING_APPROVAL' ? 'Awaiting Approval' : 'Online'}
-              </p>
+              {threadId && thread?.status !== 'COMPILED' && thread?.status !== 'ARCHIVED' && (
+                <p className="text-xs text-accent mt-0.5 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                  {thread?.status === 'AWAITING_APPROVAL' ? 'Awaiting Approval' : 'Online'}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">

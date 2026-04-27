@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useBayseAccount, useBayseApiKeys, useBayseBalance, useCreateApiKey, useRotateApiKey, useDeleteApiKey } from '../hooks/useBayse';
 import {
   Key, RefreshCw, Plus, Shield, ChevronRight,
@@ -162,11 +163,11 @@ export default function Settings() {
                         </p>
                       </div>
                     </div>
-                    <a href="/onboarding" className="group relative inline-flex items-center justify-center gap-2 px-6! py-4! btn-join text-[#04120a] rounded-xl font-bold text-sm uppercase tracking-wide overflow-hidden transition-shadow">
+                    <Link to="/onboarding" className="group relative inline-flex items-center justify-center gap-2 px-6! py-4! btn-join text-[#04120a] rounded-xl font-bold text-sm uppercase tracking-wide overflow-hidden transition-shadow">
                       <span className="relative z-10 flex items-center gap-2">
                         Connect Bayse Account <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                       </span>
-                    </a>
+                    </Link>
                   </div>
                 ) : (
                   <div className="space-y-8 w-full">
@@ -259,9 +260,9 @@ export default function Settings() {
                     </div>
                     <p className="text-base font-medium text-white mb-2">Authentication Required</p>
                     <p className="text-sm text-text-sub max-w-md">Connect your Bayse account first to manage API keys.</p>
-                    <a href="/onboarding" className="mt-6 px-6 py-2.5 rounded-xl border border-white/20 text-white font-medium text-sm hover:bg-white/5 transition-colors inline-flex items-center gap-2">
+                    <Link to="/onboarding" className="mt-6 px-6 py-2.5 rounded-xl border border-white/20 text-white font-medium text-sm hover:bg-white/5 transition-colors inline-flex items-center gap-2">
                       Connect Account <ExternalLink size={14} />
-                    </a>
+                    </Link>
                   </div>
                 ) : (
                   <div className="w-full">

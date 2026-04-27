@@ -10,14 +10,16 @@ import {
   Plus,
   LogOut,
   ExternalLink,
-  User,
   ArrowRight,
   PieChart,
   MessageSquare,
   Wallet,
   Terminal,
+  DotSquare,
+  Dot,
 } from "lucide-react";
 import { getLenisInstance } from "../../utils/scroll";
+import { useAuth } from '../auth/AuthProvider';
 
 /* ── Navigation items ── */
 const topNavItems = [
@@ -62,12 +64,15 @@ function TopNavLink({ to, label }: { to: string; label: string }) {
 }
 
 export default function AppLayout() {
+  const { user } = useAuth();
   // Always true on initial load
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const initials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'U';
 
   // Close mobile menu on navigation
   useEffect(() => {
@@ -185,9 +190,9 @@ export default function AppLayout() {
                   {sidebarOpen ? item.label : item.label[0]}
                 </NavLink>
               ))}
-              <button className="w-11 h-11 shrink-0 rounded-full bg-white/5 flex items-center justify-center backdrop-blur-md text-white border border-white/10 hover:bg-white/10 transition-colors">
-                <Plus size={18} />
-              </button>
+              <span className="w-11 h-11 shrink-0 rounded-full bg-white/5 flex items-center justify-center backdrop-blur-md text-white border border-white/10 transition-colors">
+                <Dot size={18} />
+              </span>
             </div>
           </div>
         </div>
@@ -289,9 +294,9 @@ export default function AppLayout() {
               <div className="relative" ref={dropdownRef}>
                 <button 
                   onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                  className="w-9 h-9 rounded-full bg-gradient-to-br from-accent to-blue flex items-center justify-center shadow-lg shadow-accent/20 cursor-pointer ml-1 ring-2 ring-white/10 hover:ring-white/20 transition-all focus:outline-none"
+                  className="w-9 h-9 rounded-full bg-gradient-to-br from-accent to-accent/50 flex items-center justify-center shadow-lg shadow-accent/20 cursor-pointer ml-1 ring-2 ring-white/10 hover:ring-white/20 transition-all focus:outline-none"
                 >
-                  <span className="text-[11px] font-bold text-[#0a0a14] tracking-wider">NL</span>
+                  <span className="text-[11px] font-bold text-[#0a0a14] tracking-wider">{initials}</span>
                 </button>
 
                 <AnimatePresence>
@@ -301,21 +306,21 @@ export default function AppLayout() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
-                      className="absolute right-0 top-full mt-2 w-56 bg-[#0a0a14] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-2xl z-50"
+                      className="absolute right-0 top-full mt-2 w-56 bg-[#0a0a14] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-2xl z-50"
                     >
                       <div className="p-4 border-b border-white/5 bg-white/[0.02]">
                         <p className="text-xs text-text-muted mb-0.5">Signed in as</p>
-                        <p className="text-sm font-bold text-white truncate">narrative_user@market.io</p>
+                        <p className="text-sm font-bold text-white truncate">{user?.email ?? 'narrative_user@market.io'}</p>
                       </div>
                       <div className="p-1.5">
-                        <NavLink 
+                        {/* <NavLink 
                           to="/settings" 
                           onClick={() => setProfileMenuOpen(false)}
                           className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-text-sub hover:text-white hover:bg-white/5 transition-all group"
                         >
                           <User size={15} className="text-text-muted group-hover:text-accent" />
                           <span>View Profile</span>
-                        </NavLink>
+                        </NavLink> */}
                         <NavLink 
                           to="/settings" 
                           onClick={() => setProfileMenuOpen(false)}
