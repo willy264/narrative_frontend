@@ -162,7 +162,7 @@ export default function Settings() {
                         </p>
                       </div>
                     </div>
-                    <a href="/onboarding" className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent text-[#04120a] rounded-xl font-bold text-sm uppercase tracking-wide overflow-hidden hover:shadow-[0_0_20px_rgba(30,215,96,0.3)] transition-shadow">
+                    <a href="/onboarding" className="group relative inline-flex items-center justify-center gap-2 px-6! py-4! btn-join text-[#04120a] rounded-xl font-bold text-sm uppercase tracking-wide overflow-hidden transition-shadow">
                       <span className="relative z-10 flex items-center gap-2">
                         Connect Bayse Account <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                       </span>

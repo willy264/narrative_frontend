@@ -37,6 +37,23 @@ export interface OrchestratorStatus {
   };
 }
 
+export interface OrchestratorThreadItem {
+  schedule: Schedule;
+  latest_run?: Run;
+  workspace: Workspace;
+}
+
+/** List all orchestrator threads for the current user */
+export const useOrchestratorThreads = () => {
+  return useQuery({
+    queryKey: ['orchestrator', 'threads'],
+    queryFn: async () => {
+      const response = await api.get<{ data: OrchestratorThreadItem[] }>('/api/orchestrator/threads');
+      return response.data.data;
+    },
+  });
+};
+
 export const useOrchestratorStatus = (threadId?: string, isPollingEnabled: boolean = false) => {
   return useQuery({
     queryKey: ['orchestrator', 'status', threadId],
@@ -55,6 +72,24 @@ export const useOrchestratorStatus = (threadId?: string, isPollingEnabled: boole
   });
 };
 
+/** Paginated run history for a thread */
+export const useRunHistory = (threadId?: string, before?: string, limit: number = 20) => {
+  return useQuery({
+    queryKey: ['orchestrator', 'runs', threadId, before, limit],
+    queryFn: async () => {
+      if (!threadId) return [];
+      const params = new URLSearchParams();
+      if (before) params.set('before', before);
+      params.set('limit', String(limit));
+      const response = await api.get<{ data: Run[] }>(
+        `/api/orchestrator/threads/${threadId}/runs?${params.toString()}`
+      );
+      return response.data.data;
+    },
+    enabled: !!threadId,
+  });
+};
+
 export const useRunOrchestrator = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -67,6 +102,7 @@ export const useRunOrchestrator = () => {
     onSuccess: (_, threadId) => {
       // Invalidate to start polling with new status
       queryClient.invalidateQueries({ queryKey: ['orchestrator', 'status', threadId] });
+      queryClient.invalidateQueries({ queryKey: ['orchestrator', 'runs', threadId] });
     },
   });
 };

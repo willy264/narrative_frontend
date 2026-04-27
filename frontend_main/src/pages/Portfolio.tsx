@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useWorkspaces, useWorkspace, useWorkspaceFile, useDeposit, useWithdraw } from '../hooks/useWorkspace';
+import { useOrchestratorThreads, useOrchestratorStatus } from '../hooks/useOrchestrator';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight,
@@ -28,6 +29,13 @@ export default function Portfolio() {
 
   const deposit = useDeposit();
   const withdraw = useWithdraw();
+
+  // ── Orchestrator: get trading mode ──
+  const { data: orchThreads } = useOrchestratorThreads();
+  const primaryThreadId = orchThreads?.[0]?.schedule?.thread_id;
+  const { data: orchStatus } = useOrchestratorStatus(primaryThreadId);
+  const tradingMode = orchStatus?.trading_policy?.mode ?? 'paper';
+  const isLiveTrading = tradingMode === 'live';
 
   const portfolioData = (portfolioFile as any)?.parsedContent || {
     total_value: 0,
@@ -173,7 +181,7 @@ export default function Portfolio() {
           { icon: Wallet, label: 'Total Value', value: `${symbol}${displayValue.toLocaleString()}`, accent: true },
           { icon: DollarSign, label: 'Unallocated', value: `${symbol}${displayUnallocated.toLocaleString()}` },
           { icon: BarChart3, label: 'Open Positions', value: `${portfolioData.positions?.length || 0}` },
-          { icon: Shield, label: 'Trading Mode', value: 'Paper' },
+          { icon: Shield, label: 'Trading Mode', value: isLiveTrading ? 'LIVE' : 'Paper' },
         ].map((card) => (
           <div key={card.label} className="stat-card">
             <div className="flex items-center gap-2 mb-2">

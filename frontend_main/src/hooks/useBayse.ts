@@ -23,6 +23,12 @@ export interface BayseApiKeyListItem {
   rotated_at?: string;
 }
 
+export interface BayseBalance {
+  assets: Array<{ symbol: string; available: number; locked: number; total: number }>;
+  fetched_at: string;
+  owner_id: string;
+}
+
 export const useBayseAccount = () => {
   return useQuery({
     queryKey: ['bayse', 'account'],
@@ -49,6 +55,18 @@ export const useConnectBayse = () => {
     onSuccess: (data) => {
       queryClient.setQueryData(['bayse', 'account'], data.data);
     },
+  });
+};
+
+export const useBayseBalance = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['bayse', 'balance'],
+    queryFn: async () => {
+      const response = await api.get<{ data: BayseBalance }>('/api/bayse/accounts/me/balance');
+      return response.data.data;
+    },
+    enabled,
+    retry: false,
   });
 };
 
@@ -81,6 +99,20 @@ export const useRotateApiKey = () => {
   return useMutation({
     mutationFn: async (keyId: string) => {
       const response = await api.post<{ data: BayseConnectionSummary }>(`/api/bayse/accounts/me/api-keys/${keyId}/rotate`);
+      return response.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bayse', 'api-keys'] });
+      queryClient.invalidateQueries({ queryKey: ['bayse', 'account'] });
+    },
+  });
+};
+
+export const useDeleteApiKey = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (keyId: string) => {
+      const response = await api.delete<{ data: { key_id: string; owner_id: string } }>(`/api/bayse/accounts/me/api-keys/${keyId}`);
       return response.data.data;
     },
     onSuccess: () => {

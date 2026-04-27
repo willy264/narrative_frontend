@@ -46,7 +46,7 @@ export default function CustomSelect({ value, options, onChange, className }: Cu
             animate={{ opacity: 1, y: 4, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute z-50 top-full left-0 w-full min-w-[160px] bg-[#0a0a14] border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden py-1.5 backdrop-blur-2xl"
+            className="absolute z-50 top-full left-0 w-full min-w-[160px] bg-[#0a0a14] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden py-1.5 backdrop-blur-2xl"
           >
             <div className="max-h-[240px] overflow-y-auto no-scrollbar">
               {options.map((option) => (
@@ -57,9 +57,9 @@ export default function CustomSelect({ value, options, onChange, className }: Cu
                     onChange(option.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-2.5 text-sm transition-all flex items-center justify-between group ${
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-all rounded-none! flex items-center justify-between group ${
                     option.value === value 
-                      ? 'bg-accent text-[#0a0a14] font-bold' 
+                      ? 'btn-join text-[#0a0a14] font-bold' 
                       : 'text-text-sub hover:bg-white/5 hover:text-white'
                   }`}
                 >

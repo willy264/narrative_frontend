@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCompilerThreads, useCreateCompilerThread, useSendMessage, useApproveThread, useCompilerThread } from '../hooks/useCompiler';
+import { useCompilerStream } from '../hooks/useCompilerStream';
+import { useNarratives, useBootstrapWorkspace } from '../hooks/useWorkspace';
 import {
   Send, CheckCircle2, Bot, Sparkles,
   AlertCircle, Lightbulb, Zap, Target, TrendingUp,
-  Paperclip, Smile, MoreVertical, Search, ChevronLeft
+  Paperclip, Smile, MoreVertical, Search, ChevronLeft,
+  Rocket, Loader2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -34,7 +38,9 @@ const SUGGESTED_PROMPTS = [
 export default function Messages() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [input, setInput] = useState('');
+  const [isBootstrapping, setIsBootstrapping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // ── Real data: fetch all compiler threads for the sidebar ──
   const { data: allThreads } = useCompilerThreads();
@@ -42,6 +48,13 @@ export default function Messages() {
   const createThread = useCreateCompilerThread();
   const sendMessage = useSendMessage();
   const approveThread = useApproveThread();
+
+  // ── SSE: real-time updates for the active thread ──
+  useCompilerStream(threadId);
+
+  // ── Workspace bootstrap: fetch narratives to find the one linked to this thread ──
+  const { data: narratives } = useNarratives();
+  const bootstrapWorkspace = useBootstrapWorkspace();
 
   useEffect(() => {
     if (!threadId && !createThread.isPending && !createThread.isError) {
@@ -75,9 +88,43 @@ export default function Messages() {
   const handleApprove = () => {
     if (!threadId) return;
     approveThread.mutate(threadId, {
-      onSuccess: () => toast.success('Narrative thesis compiled successfully!'),
+      onSuccess: () => {
+        toast.success('Narrative thesis compiled successfully!');
+        // Workspace bootstrap will be available once the narrative is visible
+      },
       onError: () => toast.error('Failed to approve thesis', { id: 'approve-thesis-error' }),
     });
+  };
+
+  // ── Workspace bootstrap: trigger after COMPILED ──
+  const handleBootstrapWorkspace = () => {
+    if (!threadId || !thread) return;
+    // Find the narrative linked to this compiler thread
+    const narrative = narratives?.find(n => n.compiler_thread_id === threadId);
+    if (!narrative) {
+      toast.error('Narrative not found. It may still be processing — try again in a moment.', { id: 'narrative-not-found' });
+      return;
+    }
+    setIsBootstrapping(true);
+    bootstrapWorkspace.mutate(
+      { narrativeId: narrative.narrative_id, thread_id: threadId, base_currency: 'USD' },
+      {
+        onSuccess: (data) => {
+          if (data.reused) {
+            toast.success('Workspace already exists — navigating to dashboard.');
+          } else {
+            toast.success('Workspace created! Orchestrator is now armed.');
+          }
+          setIsBootstrapping(false);
+          navigate('/');
+        },
+        onError: (err: any) => {
+          setIsBootstrapping(false);
+          const msg = err.response?.data?.error?.message || 'Failed to bootstrap workspace';
+          toast.error(msg, { id: 'bootstrap-error' });
+        },
+      }
+    );
   };
 
   const handleSelectThread = (id: string) => {
@@ -305,10 +352,21 @@ export default function Messages() {
         {/* Input Area */}
         <div className="p-3 sm:p-6 bg-[#0a0a14]/90 backdrop-blur-lg border-t border-white/[0.04] shrink-0">
           {isCompiled ? (
-            <div className="py-4 text-center">
+            <div className="py-4 flex flex-col sm:flex-row items-center justify-center gap-4">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-semibold border border-accent/20">
-                <CheckCircle2 size={16} /> Narrative Compiled and Deployed
+                <CheckCircle2 size={16} /> Narrative Compiled
               </div>
+              <button
+                onClick={handleBootstrapWorkspace}
+                disabled={isBootstrapping}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-[#04120a] text-sm font-bold hover:shadow-[0_0_20px_rgba(30,215,96,0.3)] transition-all disabled:opacity-50"
+              >
+                {isBootstrapping ? (
+                  <><Loader2 size={16} className="animate-spin" /> Bootstrapping Workspace...</>
+                ) : (
+                  <><Rocket size={16} /> Deploy to Workspace</>
+                )}
+              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex items-end gap-1 sm:gap-2 bg-white/[0.03] border border-white/10 rounded-2xl p-1.5 sm:p-2 focus-within:border-accent/40 focus-within:bg-white/[0.05] transition-all">

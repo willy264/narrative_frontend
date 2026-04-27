@@ -20,6 +20,17 @@ export interface CompilerThread {
   updated_at: string;
 }
 
+/** List all compiler threads for the current user (newest first) */
+export const useCompilerThreads = () => {
+  return useQuery({
+    queryKey: ['compiler', 'threads'],
+    queryFn: async () => {
+      const response = await api.get<{ data: CompilerThread[] }>('/api/compiler/threads');
+      return response.data.data;
+    },
+  });
+};
+
 export const useCreateCompilerThread = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -29,6 +40,7 @@ export const useCreateCompilerThread = () => {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['compiler', data.thread_id], data);
+      queryClient.invalidateQueries({ queryKey: ['compiler', 'threads'] });
     },
   });
 };
@@ -67,6 +79,7 @@ export const useApproveThread = () => {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['compiler', data.thread_id], data);
+      queryClient.invalidateQueries({ queryKey: ['compiler', 'threads'] });
     },
   });
 };

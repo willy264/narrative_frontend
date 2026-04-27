@@ -1,53 +1,23 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, ArrowRight, Activity, Zap, BarChart3, Users,
+  Plus, ArrowRight, Activity, BarChart3, Users,
   Wallet, ArrowUpRight, Play, Pause, RefreshCcw, Eye,
-  TrendingUp, Cpu, ChevronRight, Layers, Target, AlertTriangle, Shield
+  TrendingUp, Cpu, ChevronRight, Layers, Target, AlertTriangle, Shield, Info
 } from 'lucide-react';
 import { useOrchestratorThreads, useOrchestratorStatus, useRunOrchestrator, usePauseOrchestrator, useResumeOrchestrator, useRunHistory } from '../hooks/useOrchestrator';
-import { useWorkspaceFile } from '../hooks/useWorkspace';
+import { useWorkspaceFile, useNarratives } from '../hooks/useWorkspace';
+import { useBayseBalance } from '../hooks/useBayse';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 
-const MARKET_ICONS = [TrendingUp, Activity, Target, Layers];
+const SCHEDULE_STATUS_STYLES: Record<string, { dot: string; text: string; label: string }> = {
+  active:   { dot: 'bg-accent animate-pulse', text: 'text-accent', label: 'Active' },
+  paused:   { dot: 'bg-warn', text: 'text-warn', label: 'Paused' },
+  terminal: { dot: 'bg-danger', text: 'text-danger', label: 'Terminal' },
+};
 
-const MOCK_MARKETS = [
-  {
-    id: 'btc-momentum', name: 'BTC Momentum',
-    description: 'Build and run AI agents that analyze Bitcoin momentum indicators. Deploy trading strategies, compete for top performance, and earn rewards.',
-    tags: ['Technical Analysis', 'Trading Strategy', 'Risk Management'],
-    liveSessions: 3, activeUsers: 138, multiplier: '2x',
-    totalSessions: '389.9K', totalRewards: '465.11K USD',
-    apy: '28.25%',
-  },
-  {
-    id: 'eth-yield', name: 'ETH Yield Farm',
-    description: 'Put your stablecoins to work with AI agents that track real-time yield opportunities and dynamically shift your assets to maximize returns.',
-    tags: ['Stablecoins', 'Yield Optimization', 'Cross-Chain'],
-    liveSessions: 0, activeUsers: 42, multiplier: '1.8x',
-    totalSessions: '202.3K', totalRewards: '32.8K USD',
-    apy: '12.40%',
-  },
-  {
-    id: 'forex-macro', name: 'Forex Macro',
-    description: 'Design macro-economic narrative agents that compete in forex markets. Use logic, timing, and strategy to outplay others in currency trading.',
-    tags: ['Macro Strategy', 'Currency Trading', 'Position Control'],
-    liveSessions: 1, activeUsers: 89, multiplier: '1.5x',
-    totalSessions: '554.3K', totalRewards: '142.16K USD',
-    apy: '19.85%',
-  },
-  {
-    id: 'defi-arb', name: 'DeFi Arbitrage',
-    description: 'Run trading agents with your own strategy logic. No code, no barriers. Deploy agents to find arbitrage opportunities across DeFi protocols.',
-    tags: ['DeFi', 'Arbitrage', 'Smart Contracts', 'Liquidity'],
-    liveSessions: 0, activeUsers: 24, multiplier: '2.5x',
-    totalSessions: '0', totalRewards: '0.00 USD',
-    apy: '0.00%',
-  },
-];
-
-const statusColors = {
+const RUN_STATUS_STYLES: Record<string, { dot: string; text: string; label: string }> = {
   started:   { dot: 'bg-accent animate-pulse', text: 'text-accent', label: 'Live' },
   succeeded: { dot: 'bg-purple-400', text: 'text-purple-400', label: 'Completed' },
   failed:    { dot: 'bg-danger', text: 'text-danger', label: 'Failed' },
@@ -68,6 +38,13 @@ export default function Dashboard() {
   const { data: portfolioFile } = useWorkspaceFile(primaryWorkspaceId, 'portfolio');
   const { data: runHistory } = useRunHistory(primaryThreadId, undefined, 10);
 
+  // ── Bayse balance (shown in stats strip) ──
+  const { data: bayseBalance } = useBayseBalance(true);
+
+  // ── Narratives list (for count in stats and workspace names) ──
+  const { data: narratives } = useNarratives();
+
+
   const runOrchestrator = useRunOrchestrator();
   const pauseOrchestrator = usePauseOrchestrator();
   const resumeOrchestrator = useResumeOrchestrator();
@@ -77,7 +54,11 @@ export default function Dashboard() {
   const isTerminal = status?.schedule?.status === 'terminal';
   const tradingMode: string = status?.trading_policy?.mode ?? 'paper';
   const isLive = tradingMode === 'live';
+  const isRuntimeDisabled = status?.runtime_mode === 'disabled';
   const portfolioData = (portfolioFile as any)?.parsedContent || { total_value: 0, positions: [] };
+
+  // Compute total Bayse wallet value
+  const bayseTotal = bayseBalance?.assets?.reduce((sum, a) => sum + a.total, 0) ?? 0;
 
   // Show Bayse setup banner if latest run failed with Bayse error
   const bayseSetupNeeded = status?.latest_run?.status === 'failed' &&
@@ -143,20 +124,31 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* ── Runtime Disabled Banner ── */}
+      {isRuntimeDisabled && (
+        <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue/[0.06] border border-blue/20">
+          <Info size={16} className="text-blue shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white">AI runtime unavailable</p>
+            <p className="text-xs text-text-sub mt-0.5">Scheduled runs are currently in test mode and will be logged as skipped. This is a backend configuration issue — please try again later.</p>
+          </div>
+        </div>
+      )}
+
       {/* ── Hero Header ── */}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">Markets</h2>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">Narratives</h2>
           <p className="text-text-sub text-sm leading-relaxed max-w-lg">
             Explore AI-powered trading narratives. Join a space to deploy agents, compete with strategies, and earn rewards across market cycles.
           </p>
         </div>
         <button
           onClick={() => navigate('/messages')}
-          className="btn-create inline-flex items-center gap-2.5 shrink-0 self-start"
+          className="btn-join inline-flex items-center gap-2.5 shrink-0 self-start"
         >
           <Plus size={16} />
-          Create Market
+          Create Narrative
           <ArrowRight size={16} />
         </button>
       </div>
@@ -164,10 +156,10 @@ export default function Dashboard() {
       {/* ── Stats Strip ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { icon: Wallet, label: 'Total Value', value: `$${(portfolioData.total_value || 124500).toLocaleString()}`, sub: <span className="text-accent"><ArrowUpRight size={10} className="inline" /> +2.4% in 24h</span> },
+          { icon: Wallet, label: 'Portfolio Value', value: `$${(portfolioData.total_value || 0).toLocaleString()}`, sub: <span className="text-accent"><ArrowUpRight size={10} className="inline" /> Bayse: ${bayseTotal.toLocaleString()}</span> },
           { icon: BarChart3, label: 'Total Runs', value: sessions.length > 0 ? String(sessions.length) : '—', sub: <span className="text-accent">{sessions.filter(s => s.rawStatus === 'started').length} live</span> },
-          { icon: Zap, label: 'Trending', value: 'BTC Momentum', sub: <span className="text-text-muted">230 sessions in 24h</span>, small: true },
-          { icon: Users, label: 'Active Agents', value: '153.2K', sub: <span className="text-text-muted">176 active in last 24h</span> },
+          { icon: Layers, label: 'Narratives', value: String(narratives?.length ?? 0), sub: <span className="text-text-muted">{orchThreads?.length ?? 0} orchestrator threads</span> },
+          { icon: Users, label: 'Trading Mode', value: isLive ? 'LIVE' : 'Paper', sub: <span className={isLive ? 'text-danger' : 'text-text-muted'}>{isLive ? 'Real money active' : 'Simulated trades'}</span>, small: true },
         ].map((stat) => (
           <div key={stat.label} className="stat-card group">
             <div className="flex items-center gap-2 mb-2">
@@ -253,65 +245,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Market Space Cards ── */}
-      <div>
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="font-display text-lg sm:text-xl font-bold text-white">Active Spaces</h3>
-          <span className="text-xs text-text-muted">{MOCK_MARKETS.length} spaces available</span>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {MOCK_MARKETS.map((market, idx) => {
-            const Icon = MARKET_ICONS[idx % MARKET_ICONS.length];
-            return (
-              <div key={market.id} className="market-card group">
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0 group-hover:bg-accent/15 transition-colors">
-                      <Icon size={20} className="text-accent" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-display text-base sm:text-lg font-bold text-white truncate">{market.name}</h3>
-                      <div className="flex items-center gap-3 mt-0.5 text-xs text-text-muted">
-                        <span className="flex items-center gap-1">
-                          <span className={`w-1.5 h-1.5 rounded-full ${market.liveSessions > 0 ? 'bg-accent' : 'bg-text-muted'}`} />
-                          {market.liveSessions} Live
-                        </span>
-                        <span className="flex items-center gap-1"><Users size={11} /> {market.activeUsers} Active</span>
-                      </div>
-                    </div>
-                  </div>
-                  <button onClick={() => navigate('/messages')} className="btn-join shrink-0">
-                    Join Space <ArrowRight size={14} />
-                  </button>
-                </div>
-                <p className="text-sm text-text-sub leading-relaxed mb-4 line-clamp-2">{market.description}</p>
-                <div className="flex flex-wrap gap-1.5 mb-5">
-                  {market.tags.map((tag) => (<span key={tag} className="tag">{tag}</span>))}
-                </div>
-                <div className="grid grid-cols-4 gap-2 pt-4 border-t border-white/5">
-                  <div>
-                    <p className="text-[10px] text-text-muted mb-0.5">Multiplier</p>
-                    <p className="font-display text-sm font-bold text-accent">{market.multiplier}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-text-muted mb-0.5">ROI</p>
-                    <p className="font-display text-sm font-bold text-accent">{market.apy}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-text-muted mb-0.5">Sessions</p>
-                    <p className="font-display text-sm font-bold text-white">{market.totalSessions}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-text-muted mb-0.5">Rewards</p>
-                    <p className="font-display text-sm font-bold text-white">{market.totalRewards}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {/* ── Recent Sessions (real run history) ── */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
@@ -348,7 +281,7 @@ export default function Dashboard() {
             </div>
           ) : (
             filteredSessions.map((session) => {
-              const colors = statusColors[session.rawStatus as keyof typeof statusColors] ?? statusColors.skipped;
+              const colors = RUN_STATUS_STYLES[session.rawStatus as keyof typeof RUN_STATUS_STYLES] ?? RUN_STATUS_STYLES.skipped;
               return (
                 <div key={session.id} className="session-row group">
                   <span className="text-text-muted font-data text-xs w-16 shrink-0 hidden sm:block">{session.id}</span>
@@ -386,6 +319,128 @@ export default function Dashboard() {
             })
           )}
         </div>
+      </div>
+
+      {/* ── Active Workspaces (real data from orchestrator threads) ── */}
+      <div>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-display text-lg sm:text-xl font-bold text-white">Active Spaces</h3>
+          <span className="text-xs text-text-muted">{orchThreads?.length ?? 0} active workspace{(orchThreads?.length ?? 0) !== 1 ? 's' : ''}</span>
+        </div>
+        {(!orchThreads || orchThreads.length === 0) ? (
+          <div className="flex flex-col items-center justify-center text-center py-16 rounded-2xl bg-white/[0.02] border border-dashed border-white/10">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+              <Layers size={24} className="text-text-muted" />
+            </div>
+            <p className="text-sm font-medium text-white mb-1">No active workspaces</p>
+            <p className="text-xs text-text-sub max-w-sm mb-6">
+              Compile your first trading narrative to create a workspace. The orchestrator will begin its 4-hour trading cycle automatically.
+            </p>
+            <button
+              onClick={() => navigate('/messages')}
+              className="btn-join inline-flex items-center gap-2 text-sm"
+            >
+              <Plus size={14} /> Create Narrative <ArrowRight size={14} />
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {orchThreads.map((ot, idx) => {
+              const WORKSPACE_ICONS = [TrendingUp, Activity, Target, Layers];
+              const Icon = WORKSPACE_ICONS[idx % WORKSPACE_ICONS.length];
+              const schedule = ot.schedule;
+              const latestRun = ot.latest_run;
+              const ws = ot.workspace;
+              const narrative = narratives?.find(n => n.narrative_id === schedule.narrative_id);
+              const schedStatus = SCHEDULE_STATUS_STYLES[schedule.status] ?? SCHEDULE_STATUS_STYLES.active;
+              const currency = ws?.base_currency === 'NGN' ? '₦' : '$';
+              const consecutiveFails = schedule.consecutive_failures;
+
+              return (
+                <div key={schedule.thread_id} className="market-card group">
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        schedule.status === 'active' ? 'bg-accent/10 border border-accent/20 group-hover:bg-accent/15' :
+                        schedule.status === 'paused' ? 'bg-warn/10 border border-warn/20' :
+                        'bg-danger/10 border border-danger/20'
+                      }`}>
+                        <Icon size={20} className={
+                          schedule.status === 'active' ? 'text-accent' :
+                          schedule.status === 'paused' ? 'text-warn' : 'text-danger'
+                        } />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-display text-base sm:text-lg font-bold text-white truncate">
+                          {narrative?.narrative_id ? `Narrative ${narrative.narrative_id.slice(-6)}` : `Thread ${schedule.thread_id.slice(-6)}`}
+                        </h3>
+                        <div className="flex items-center gap-3 mt-0.5 text-xs text-text-muted">
+                          <span className="flex items-center gap-1">
+                            <span className={`w-1.5 h-1.5 rounded-full ${schedStatus.dot}`} />
+                            {schedStatus.label}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users size={11} /> {currency} {ws?.base_currency ?? 'USD'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button onClick={() => navigate('/portfolio')} className="btn-join shrink-0">
+                      View <ArrowRight size={14} />
+                    </button>
+                  </div>
+
+                  {/* Workspace info */}
+                  <div className="text-sm text-text-sub leading-relaxed mb-4">
+                    {latestRun?.summary
+                      ? <span className="line-clamp-2">{latestRun.summary}</span>
+                      : schedule.status === 'terminal'
+                        ? 'This narrative has reached a terminal state and is now read-only.'
+                        : 'Orchestrator is armed and will execute on the next 4-hour cycle.'}
+                  </div>
+
+                  {/* Tags from real data */}
+                  <div className="flex flex-wrap gap-1.5 mb-5">
+                    <span className="tag">{ws?.base_currency ?? 'USD'}</span>
+                    <span className="tag">v{ws?.version ?? 1}</span>
+                    {latestRun?.trigger && <span className="tag">{latestRun.trigger}</span>}
+                    {consecutiveFails > 0 && <span className="tag text-danger border-danger/20">{consecutiveFails} fail{consecutiveFails > 1 ? 's' : ''}</span>}
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-4 gap-2 pt-4 border-t border-white/5">
+                    <div>
+                      <p className="text-[10px] text-text-muted mb-0.5">Status</p>
+                      <p className={`font-display text-sm font-bold ${schedStatus.text}`}>{schedStatus.label}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-text-muted mb-0.5">Last Run</p>
+                      <p className="font-display text-sm font-bold text-white">
+                        {latestRun?.status
+                          ? (RUN_STATUS_STYLES[latestRun.status]?.label ?? latestRun.status)
+                          : '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-text-muted mb-0.5">Next Run</p>
+                      <p className="font-display text-sm font-bold text-white truncate">
+                        {schedule.next_run_at
+                          ? formatDistanceToNow(new Date(schedule.next_run_at), { addSuffix: true })
+                          : '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-text-muted mb-0.5">Created</p>
+                      <p className="font-display text-sm font-bold text-white truncate">
+                        {formatDistanceToNow(new Date(schedule.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
