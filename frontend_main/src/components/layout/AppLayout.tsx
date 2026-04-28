@@ -7,7 +7,6 @@ import {
   Bell,
   GripHorizontal,
   Search,
-  Plus,
   LogOut,
   ExternalLink,
   ArrowRight,
@@ -15,7 +14,6 @@ import {
   MessageSquare,
   Wallet,
   Terminal,
-  DotSquare,
   Dot,
 } from "lucide-react";
 import { getLenisInstance } from "../../utils/scroll";
