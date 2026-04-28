@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Folder,
   Settings as SettingsIcon,
-  Bell,
+  // Bell,
   GripHorizontal,
   Search,
   LogOut,
@@ -284,10 +284,10 @@ export default function AppLayout() {
                 </span>
               </div>
               
-              <button className="w-9 h-9 rounded-full bg-white/[0.03] flex items-center justify-center border border-white/[0.05] text-text-sub hover:text-white hover:bg-white/[0.08] transition-all relative group">
+              {/* <button className="w-9 h-9 rounded-full bg-white/[0.03] flex items-center justify-center border border-white/[0.05] text-text-sub hover:text-white hover:bg-white/[0.08] transition-all relative group">
                 <Bell size={15} />
                 <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-warn ring-2 ring-[#0a0a14]" />
-              </button>
+              </button> */}
               
               <div className="relative" ref={dropdownRef}>
                 <button 

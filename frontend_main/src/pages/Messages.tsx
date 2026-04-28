@@ -6,8 +6,10 @@ import { useNarratives, useBootstrapWorkspace } from '../hooks/useWorkspace';
 import {
   Send, CheckCircle2, Bot, Sparkles,
   AlertCircle, Lightbulb, Zap, Target, TrendingUp,
-  Paperclip, Smile, MoreVertical, Search,
-  Rocket, Loader2, GripHorizontal
+  Paperclip, Smile, 
+  // Search,
+  Rocket, Loader2, GripHorizontal,
+  Plus
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -172,7 +174,7 @@ export default function Messages() {
           <h2 className="font-display text-lg font-bold text-white">Messages</h2>
           <div className="flex items-center gap-1">
             <button onClick={handleNewThread} className="text-text-muted hover:text-accent transition-colors p-2" title="New thread">
-              <MoreVertical size={18} />
+              <Plus size={18} />
             </button>
             <button onClick={() => setShowMobileSidebar(false)} className="md:hidden text-text-muted hover:text-white transition-colors p-2 group flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.02] border border-white/[0.05] duration-300 " title="Close sidebar">
               <div className="relative h-4 w-4">
@@ -183,14 +185,14 @@ export default function Messages() {
           </div>
         </div>
         <div className="p-3">
-          <div className="relative">
+          {/* <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input 
               type="text" 
               placeholder="Search..." 
               className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder:text-text-muted outline-none focus:border-accent/50 transition-colors"
             />
-          </div>
+          </div> */}
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1 no-scrollbar">
           {(allThreads ?? []).map((t) => {
@@ -287,12 +289,12 @@ export default function Messages() {
                 {threadId}
               </span>
             )}
-            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/[0.05] text-text-muted hover:text-white transition-colors">
+            {/* <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/[0.05] text-text-muted hover:text-white transition-colors">
               <Search size={16} />
-            </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/[0.05] text-text-muted hover:text-white transition-colors">
+            </button> */}
+            {/* <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/[0.05] text-text-muted hover:text-white transition-colors">
               <MoreVertical size={16} />
-            </button>
+            </button> */}
           </div>
         </div>
 
