@@ -7,7 +7,7 @@ import {
   // Bell,
   GripHorizontal,
   Search,
-  LogOut,
+  // LogOut,
   ExternalLink,
   ArrowRight,
   PieChart,
