@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCompilerThreads, useCreateCompilerThread, useSendMessage, useApproveThread, useCompilerThread } from '../hooks/useCompiler';
 import { useCompilerStream } from '../hooks/useCompilerStream';
 import { useNarratives, useBootstrapWorkspace } from '../hooks/useWorkspace';
@@ -38,7 +38,9 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export default function Messages() {
-  const [threadId, setThreadId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const threadFromUrl = searchParams.get('thread');
+  const [threadId, setThreadId] = useState<string | null>(threadFromUrl);
   const [input, setInput] = useState('');
   const [isBootstrapping, setIsBootstrapping] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
@@ -58,6 +60,12 @@ export default function Messages() {
   // ── Workspace bootstrap: fetch narratives to find the one linked to this thread ──
   const { data: narratives } = useNarratives();
   const bootstrapWorkspace = useBootstrapWorkspace();
+
+  useEffect(() => {
+    if (threadFromUrl && threadFromUrl !== threadId) {
+      setThreadId(threadFromUrl);
+    }
+  }, [threadFromUrl, threadId]);
 
   useEffect(() => {
     if (!threadId && !createThread.isPending && !createThread.isError) {
@@ -131,14 +139,14 @@ export default function Messages() {
   };
 
   const handleSelectThread = (id: string) => {
-    setThreadId(id);
+    setSearchParams({ thread: id });
     setShowMobileSidebar(false);
   };
 
   const handleNewThread = () => {
     createThread.mutate(undefined, {
       onSuccess: (data) => {
-        setThreadId(data.thread_id);
+        setSearchParams({ thread: data.thread_id });
         setShowMobileSidebar(false);
       },
       onError: () => toast.error('Failed to create new session'),

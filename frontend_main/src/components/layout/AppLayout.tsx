@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Outlet, NavLink, useLocation } from "react-router-dom";
+import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Folder,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { getLenisInstance } from "../../utils/scroll";
 import { useAuth } from '../auth/AuthProvider';
+import { useNarratives, type NarrativeRecord } from '../../hooks/useWorkspace';
 
 /* ── Navigation items ── */
 const topNavItems = [
@@ -69,8 +70,31 @@ export default function AppLayout() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { data: narratives } = useNarratives();
   
   const initials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'U';
+
+  const filteredNarratives = searchQuery.trim() === "" 
+    ? [] 
+    : (narratives ?? []).filter((n: NarrativeRecord) => 
+        n.narrative_id.toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 5);
+
+  // Shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Close mobile menu on navigation
   useEffect(() => {
@@ -251,16 +275,57 @@ export default function AppLayout() {
               <div className="relative group hidden sm:block">
                 <Search
                   size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-accent transition-colors"
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${
+                    isSearchFocused ? "text-accent" : "text-text-muted"
+                  }`}
                 />
                 <input
+                  ref={searchInputRef}
                   type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                   placeholder="Search workspace..."
                   className="bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] focus:bg-white/[0.05] focus:border-accent/50 text-[13px] text-white rounded-full pl-9 pr-12 py-2 w-[200px] focus:w-[280px] transition-all duration-300 outline-none placeholder:text-text-muted"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none">
                   <span className="text-[10px] font-data text-text-muted bg-white/[0.05] px-1.5 py-0.5 rounded border border-white/10">⌘K</span>
                 </div>
+
+                <AnimatePresence>
+                  {isSearchFocused && filteredNarratives.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 top-full mt-2 w-[320px] bg-[#0a0a14] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-2xl z-50"
+                    >
+                      <div className="p-2">
+                        <p className="text-[10px] font-bold text-text-muted px-3 py-2 uppercase tracking-widest">Narratives</p>
+                        {filteredNarratives.map((n: NarrativeRecord) => (
+                          <button
+                            key={n.narrative_id}
+                            onClick={() => {
+                              navigate(`/messages?thread=${n.compiler_thread_id}`);
+                              setSearchQuery("");
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-text-sub hover:text-white hover:bg-white/5 transition-all group text-left"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
+                              <MessageSquare size={14} className="text-accent" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">Narrative {n.narrative_id.slice(-6)}</p>
+                              <p className="text-[10px] text-text-muted">Thread: {n.compiler_thread_id?.slice(-8)}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               <div className="sm:hidden">
                 <button className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center border border-white/5 text-text-sub hover:text-white transition-colors">
@@ -322,7 +387,7 @@ export default function AppLayout() {
                         <NavLink 
                           to="/settings" 
                           onClick={() => setProfileMenuOpen(false)}
-                          className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-text-sub hover:text-white hover:bg-white/5 transition-all group"
+                          className="flex items-center gap-3 px-3 py-2 text-sm text-text-sub hover:text-white hover:bg-accent/5 transition-all group"
                         >
                           <SettingsIcon size={15} className="text-text-muted group-hover:text-accent" />
                           <span>Settings</span>
@@ -331,24 +396,25 @@ export default function AppLayout() {
                           href="https://marketnarrativelive.vercel.app" 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-text-sub hover:text-white hover:bg-white/5 transition-all group"
+                          className="flex items-center gap-3 px-3 py-2 text-sm text-text-sub hover:text-white hover:bg-accent/5 transition-all group"
                         >
                           <ExternalLink size={15} className="text-text-muted group-hover:text-accent" />
                           <span>Landing Page</span>
                         </a>
                       </div>
-                      <div className="p-1.5 border-t border-white/5">
+                      
+                       {/* Handle logout */}
+                      {/* <div className="p-1.5 border-t border-white/5">
                         <button 
                           className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-danger hover:bg-danger/10 transition-all group"
                           onClick={() => {
-                            // Handle logout
                             setProfileMenuOpen(false);
                           }}
                         >
                           <LogOut size={15} className="group-hover:scale-110 transition-transform" />
                           <span className="font-semibold">Logout</span>
                         </button>
-                      </div>
+                      </div> */}
                     </motion.div>
                   )}
                 </AnimatePresence>
