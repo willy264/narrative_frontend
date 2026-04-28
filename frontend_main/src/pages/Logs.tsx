@@ -5,6 +5,7 @@ import {
   AlertCircle, Info, Activity
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 import CustomSelect from '../components/ui/CustomSelect';
 
 const ACTOR_STYLES: Record<string, { color: string; bg: string; icon: typeof Activity }> = {
@@ -62,10 +63,34 @@ export default function Logs() {
     { label: 'Error', value: 'error' }
   ];
 
+  const itemVariants: any = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1, 
+      transition: { duration: 0.6, ease: "easeOut" }
+    }
+  };
+
+  const containerVariants: any = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
+  };
+
   return (
-    <div className="space-y-5 h-full flex flex-col pb-4">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-5 h-full flex flex-col pb-4"
+    >
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start justify-between shrink-0">
+      <motion.div variants={itemVariants} className="flex flex-col gap-3 sm:flex-row sm:items-start justify-between shrink-0">
         <div>
           <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-white">System Logs</h2>
           <p className="text-text-sub text-sm mt-1">Orchestrator execution timeline — inspect every cycle, actor, and decision.</p>
@@ -74,10 +99,10 @@ export default function Logs() {
           <span className="pulse-dot" />
           <span className="font-data text-xs text-text-sub">LIVE</span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-3 shrink-0">
+      <motion.div variants={itemVariants} className="grid grid-cols-4 gap-3 shrink-0">
         <div className="stat-card">
           <div className="flex items-center gap-2 mb-1">
             <Activity size={12} className="text-text-muted" />
@@ -106,10 +131,10 @@ export default function Logs() {
           </div>
           <p className="font-display text-lg font-bold text-danger">{errorCount}</p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3 shrink-0">
         <div className="relative flex-1 max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input
@@ -132,10 +157,10 @@ export default function Logs() {
           options={levelOptions}
           className="w-full sm:w-48"
         />
-      </div>
+      </motion.div>
 
-      {/* Terminal */}
-      <div className="card flex-1 flex flex-col overflow-hidden min-h-0 p-0">
+      {/* Log List */}
+      <motion.div variants={itemVariants} className="flex-1 min-h-0 bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden flex flex-col">
         <div className="px-4 sm:px-5 py-3 border-b border-border flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-danger/60" />
@@ -194,7 +219,7 @@ export default function Logs() {
             })
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

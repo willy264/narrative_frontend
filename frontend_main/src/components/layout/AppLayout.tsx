@@ -96,6 +96,14 @@ export default function AppLayout() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Initial load animation state
+  const [isReady, setIsReady] = useState(false);
+  useEffect(() => {
+    // Show background only for 2 seconds before revealing UI
+    const timer = setTimeout(() => setIsReady(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Close mobile menu on navigation
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -142,24 +150,65 @@ export default function AppLayout() {
   const formattedDate = `${currentDate.toLocaleString("en-US", { month: "long" })} ${currentDate.getDate()} • ${currentDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
 
 
+  const containerVariants: any = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.08,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: any = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1, 
+      transition: { duration: 0.6, ease: "easeOut" }
+    }
+  };
+
   return (
     <div className="flex h-screen bg-bg-root font-body overflow-hidden relative">
       {/* Global Background Video */}
-      <img
+      <motion.img
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.4 }}
+        transition={{ duration: 1.5 }}
         src="/dark_green_bg.png"
         alt="Background"
         className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-40"
       />
-      <div className="absolute inset-0 bg-bg-root/50 z-0 pointer-events-none" />
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        className="absolute inset-0 bg-bg-root/50 z-0 pointer-events-none" 
+      />
 
-      {/* ════ Desktop Sidebar ════ */}
-      <aside
-        className={`hidden lg:flex shrink-0 relative flex-col p-8 z-10 transition-all duration-500 ease-in-out ${sidebarOpen ? "w-[380px]" : "w-[100px] items-center"}`}
-      >
+      <AnimatePresence>
+        {isReady && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            className="flex h-full w-full relative z-10"
+          >
+            {/* ════ Desktop Sidebar ════ */}
+            <aside
+              className={`hidden lg:flex shrink-0 relative flex-col p-8 z-10 transition-all duration-500 ease-in-out ${sidebarOpen ? "w-[380px]" : "w-[100px] items-center"}`}
+            >
         {/* Sidebar Content */}
-        <div className="relative z-10 flex flex-col h-full w-full">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="relative z-10 flex flex-col h-full w-full"
+        >
           {/* Top Brand & Menu Icon */}
-          <div
+          <motion.div
+            variants={itemVariants}
             className={`flex items-center ${sidebarOpen ? "justify-between" : "justify-center flex-col gap-6"}`}
           >
             <h1 className="font-display font-bold text-3xl tracking-tight text-white flex items-center gap-2">
@@ -176,22 +225,28 @@ export default function AppLayout() {
             >
               <GripHorizontal size={18} />
             </button>
-          </div>
+          </motion.div>
 
           {/* Center Titles */}
           {sidebarOpen && (
-            <div className="mt-32">
+            <motion.div 
+              variants={itemVariants}
+              className="mt-32"
+            >
               <h2 className="text-[56px] font-display font-light text-white mb-2 leading-none tracking-tight">
                 Workspace
               </h2>
               <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
                 <Folder size={16} /> My Trading Desk
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Bottom Nav Pills */}
-          <div className="mt-auto">
+          <motion.div 
+            variants={itemVariants}
+            className="mt-auto"
+          >
             <div
               className={`flex ${sidebarOpen ? "flex-wrap items-center gap-3" : "flex-col items-center gap-4"}`}
             >
@@ -216,8 +271,8 @@ export default function AppLayout() {
                 <Dot size={18} />
               </span>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </aside>
 
       {/* ════ Floating Mobile Top Bar (BobbleMenu Style) ════ */}
@@ -258,7 +313,12 @@ export default function AppLayout() {
       </div>
 
       {/* ════ Main Content Area (Rounded floating card) ════ */}
-      <main className="flex-1 h-full flex flex-col relative z-20 min-w-0 pt-24 lg:pt-0">
+      <motion.main 
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+        className="flex-1 h-full flex flex-col relative z-20 min-w-0 pt-24 lg:pt-0"
+      >
         {/* The rounded floating panel */}
         <div className="w-full h-full bg-[#0a0a14]/60 backdrop-blur-[30px] lg:rounded-l-[40px] rounded-t-[32px] lg:rounded-tr-none shadow-2xl shadow-black/50 border border-white/[0.08] flex flex-col overflow-hidden relative z-10">
           <div 
@@ -427,10 +487,24 @@ export default function AppLayout() {
             className={`flex-1 overflow-y-auto relative ${location.pathname.startsWith('/messages') ? '' : 'px-6 sm:px-10 py-8'}`}
             data-lenis-prevent
           >
-            <Outlet />
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={location.pathname}
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+                className="h-full"
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
-      </main>
+      </motion.main>
+    </motion.div>
+  )}
+</AnimatePresence>
 
       {/* ════ Mobile Menu (Full Screen ClipPath Reveal) ════ */}
       <AnimatePresence>

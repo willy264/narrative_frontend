@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useBayseAccount, useBayseApiKeys, useBayseBalance, useCreateApiKey, useRotateApiKey, useDeleteApiKey } from '../hooks/useBayse';
 import {
@@ -8,8 +8,6 @@ import {
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
 
 export default function Settings() {
   const { data: account, isLoading: accountLoading } = useBayseAccount();
@@ -26,14 +24,24 @@ export default function Settings() {
     activeSection === 'balance' && !!account
   );
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  const itemVariants: any = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1, 
+      transition: { duration: 0.6, ease: "easeOut" }
+    }
+  };
 
-  useGSAP(() => {
-    const tl = gsap.timeline();
-    tl.fromTo('.settings-header', { y: -20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' })
-      .fromTo('.settings-tabs', { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, ease: 'power2.out' }, '-=0.4')
-      .fromTo('.settings-content', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.3');
-  }, { scope: containerRef });
+  const containerVariants: any = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
+  };
 
   const handleCreateKey = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,18 +99,24 @@ export default function Settings() {
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full flex flex-col pb-8">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="w-full h-full flex flex-col pb-8"
+    >
       {/* Header */}
-      <div className="settings-header mb-8 w-full flex items-center justify-between">
+      <motion.div variants={itemVariants} className="mb-8 w-full flex items-center justify-between">
         <div>
           <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-white">Settings Configuration</h2>
           <p className="text-text-sub text-base mt-2 max-w-2xl">Manage your broker integrations, secure API keys, and monitor real-time wallet balances across networks.</p>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="flex flex-col lg:flex-row gap-8 w-full flex-1">
-        {/* Sidebar Tabs */}
-        <div className="settings-tabs lg:w-64 shrink-0 flex flex-col gap-2">
+      {/* Navigation Tabs & Content */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-8 w-full">
+        {/* Navigation Tabs */}
+        <motion.div variants={itemVariants} className="lg:w-72 flex flex-row lg:flex-col gap-2 overflow-x-auto no-scrollbar pb-2 lg:pb-0">
           {[
             { id: 'broker', label: 'Broker Integration', icon: Shield },
             { id: 'api-keys', label: 'API Keys', icon: Key },
@@ -116,7 +130,6 @@ export default function Settings() {
                   : 'bg-white/[0.02] border border-white/5 text-text-sub hover:bg-white/[0.05] hover:text-white'}`}
               onClick={() => {
                 setActiveSection(tab.id as any);
-                gsap.fromTo('.settings-content', { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.4, ease: 'power2.out' });
               }}
             >
               <tab.icon size={18} className={activeSection === tab.id ? 'text-accent' : 'text-text-muted'} />
@@ -126,10 +139,10 @@ export default function Settings() {
               )}
             </button>
           ))}
-        </div>
+        </motion.div>
 
         {/* Content Area */}
-        <div className="settings-content flex-1 min-h-[500px]">
+        <motion.div variants={itemVariants} className="flex-1 w-full lg:max-w-4xl">
           {activeSection === 'broker' ? (
             /* ── Broker Integration ── */
             <div className="card overflow-hidden p-0 h-full w-full border border-white/10 bg-white/[0.02] backdrop-blur-xl rounded-none!">
@@ -473,9 +486,9 @@ export default function Settings() {
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

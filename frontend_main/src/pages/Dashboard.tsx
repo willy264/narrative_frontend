@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Plus, ArrowRight, Activity, BarChart3, Users,
   Wallet, ArrowUpRight, Play, Pause, RefreshCcw, Eye,
@@ -107,12 +108,20 @@ export default function Dashboard() {
         return true;
       });
 
+  const itemVariants: any = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1, 
+      transition: { duration: 0.6, ease: "easeOut" }
+    }
+  };
+
   return (
     <div className="space-y-8 pb-10">
 
       {/* ── Bayse Setup Banner ── */}
       {bayseSetupNeeded && (
-        <div className="flex items-start gap-3 p-4 rounded-2xl bg-warn/[0.06] border border-warn/20">
+        <motion.div variants={itemVariants} className="flex items-start gap-3 p-4 rounded-2xl bg-warn/[0.06] border border-warn/20">
           <AlertTriangle size={16} className="text-warn shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-white">Bayse account setup required</p>
@@ -121,22 +130,22 @@ export default function Dashboard() {
           <button onClick={() => navigate('/settings')} className="text-xs font-semibold text-warn hover:underline shrink-0">
             Fix Setup →
           </button>
-        </div>
+        </motion.div>
       )}
 
       {/* ── Runtime Disabled Banner ── */}
       {isRuntimeDisabled && (
-        <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue/[0.06] border border-blue/20">
+        <motion.div variants={itemVariants} className="flex items-start gap-3 p-4 rounded-2xl bg-blue/[0.06] border border-blue/20">
           <Info size={16} className="text-blue shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-white">AI runtime unavailable</p>
             <p className="text-xs text-text-sub mt-0.5">Scheduled runs are currently in test mode and will be logged as skipped. This is a backend configuration issue — please try again later.</p>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* ── Hero Header ── */}
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+      <motion.div variants={itemVariants} className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">Narratives</h2>
           <p className="text-text-sub text-sm leading-relaxed max-w-lg">
@@ -151,10 +160,10 @@ export default function Dashboard() {
           Create Narrative
           <ArrowRight size={16} />
         </button>
-      </div>
+      </motion.div>
 
       {/* ── Stats Strip ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { icon: Wallet, label: 'Portfolio Value', value: `$${(portfolioData.total_value || 0).toLocaleString()}`, sub: <span className="text-accent"><ArrowUpRight size={10} className="inline" /> Bayse: ${bayseTotal.toLocaleString()}</span> },
           { icon: BarChart3, label: 'Total Runs', value: sessions.length > 0 ? String(sessions.length) : '—', sub: <span className="text-accent">{sessions.filter(s => s.rawStatus === 'started').length} live</span> },
@@ -170,10 +179,10 @@ export default function Dashboard() {
             <p className="text-[10px] mt-1">{stat.sub}</p>
           </div>
         ))}
-      </div>
+      </motion.div>
 
       {/* ── Orchestrator Control Bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/5">
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/5">
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
@@ -243,10 +252,10 @@ export default function Dashboard() {
             {isRunning ? 'Running...' : 'Force Run'}
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Recent Sessions (real run history) ── */}
-      <div>
+      <motion.div variants={itemVariants}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
           <h3 className="font-display text-lg sm:text-xl font-bold text-white">Recent Sessions</h3>
           <div className="flex items-center gap-3">
@@ -319,10 +328,10 @@ export default function Dashboard() {
             })
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Active Workspaces (real data from orchestrator threads) ── */}
-      <div>
+      <motion.div variants={itemVariants}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-display text-lg sm:text-xl font-bold text-white">Active Spaces</h3>
           <span className="text-xs text-text-muted">{orchThreads?.length ?? 0} active workspace{(orchThreads?.length ?? 0) !== 1 ? 's' : ''}</span>
@@ -441,7 +450,7 @@ export default function Dashboard() {
             })}
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }
